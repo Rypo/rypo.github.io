@@ -1,0 +1,12 @@
+# main links
+main:
+  - title: "Analyses List"
+    url: /analyses
+  - title: "About Me"
+    url: /about
+#  - title: "Sample Posts"
+#    url: /year-archive/
+#  - title: "Sample Collections"
+#    url: /collection-archive/
+  # - title: "Sitemap"
+  #   url: /sitemap/

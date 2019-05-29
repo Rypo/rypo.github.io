@@ -1,0 +1,45 @@
+# Jekyll
+_site/
+.jekyll-cache
+.jekyll-metadata
+.sass-cache
+
+# Ruby
+.bundle/
+.byebug_history
+.ruby-gemset
+.ruby-version
+*.gem
+Gemfile.lock
+
+# Files
+.analysis
+.DS_Store
+*.swp
+*~
+
+# Build
+_asset_bundler_cache
+codekit-config.json
+node_modules
+npm-debug.log*
+
+# Folders
+/vendor
+bbin/
+bin/
+coverage
+gh-pages/
+pkg/
+test/dest
+tmp/*
+
+# Editors
+*.sublime-project
+*.sublime-workspace
+.vscode
+
+# WIP files
+_drafts
+_convert
+_notebooks

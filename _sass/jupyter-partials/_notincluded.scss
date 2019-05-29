@@ -1,0 +1,46 @@
+// // For jupyter notebook style tables
+// p, blockquote, ul, ol, dl, li, table, pre {
+//     margin: 15px 0; }
+    
+//     table {
+//       padding: 0; }
+//       table tr {
+//         border-top: 1px solid #cccccc;
+//         background-color: white;
+//         margin: 0;
+//         padding: 0; }
+//         table tr:nth-child(2n) {
+//           background-color: #f8f8f8; }
+//           table tr th {
+//           font-weight: bold;
+//           border: 1px solid #cccccc;
+//           text-align: left;
+//           margin: 0;
+//           padding: 6px 13px; }
+//         table tr td {
+//           border: 1px solid #cccccc;
+//           text-align: left;
+//           margin: 0;
+//           padding: 6px 13px; }
+//         table tr th :first-child, table tr td :first-child {
+//           margin-top: 0; }
+//         table tr th :last-child, table tr td :last-child {
+//     margin-bottom: 0; }
+
+// // for syntax highlighting
+
+// .input_area div.highlighter-rouge {
+//   background-color: #f7f7f7  !important;
+// }
+
+// .output_stream, .output_data_text, .output_traceback_line {
+//   margin-left: 2% !important;
+//   border: none !important;
+//   border-radius: 4px !important;
+//   background-color: #fafafa !important;
+//   box-shadow: none !important;
+// }
+
+// .output_stream:before, .output_data_text:before, .output_traceback_line:before{
+//   content: none !important;
+// }
