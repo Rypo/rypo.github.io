@@ -124,3 +124,9 @@ summary {
 .tabset-dropdown>.nav-tabs>li {
     display: none;
 }
+
+/* Fix table display. Overwrites css rule display: block*/
+
+table {
+    display: table;
+}

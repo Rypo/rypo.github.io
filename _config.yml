@@ -110,11 +110,11 @@ author:
   avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
   bio              : "Sharing insights and explaining value whenever and wherever possible."
   location         : "Minneapolis, MN"
-  email            : "Rygu at mail dot com"
+  email            : "ryan@gust.dev"
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
-      # url: mailto:your.name@email.com
+      url: mailto:ryan@gust.dev
     - label: "Website"
       icon: "fas fa-fw fa-link"
       url: "https://gust.dev"
@@ -280,6 +280,9 @@ tag_archive:
 #     category: /categories/:name/
 #     tag: /tags/:name/
 
+collections:
+  r_notebooks:
+    output: true
 
 # HTML Compression
 # - http://jch.penibelst.de/
@@ -314,11 +317,19 @@ defaults:
     values:
       layout: single
       author_profile: true
+  # _r_notebooks
+  - scope:
+      path: ""
+      type: rmd
+    values:
+      layout: rmd
+      author_profile: false
+      share: true
 
 head_scripts:
-  - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js
-  - https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js
-  - /assets/js/collapseheadings.js
+#  - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js
+#  - https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js
+#  - /assets/js/collapseheadings.js
 # footer_scripts:
 #   - /assets/js/your-custom-footer-script.js
 # after_footer_scripts:
