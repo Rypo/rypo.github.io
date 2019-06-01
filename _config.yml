@@ -280,9 +280,20 @@ tag_archive:
 #     category: /categories/:name/
 #     tag: /tags/:name/
 
+# Collections
 collections:
-  r_notebooks:
+  r:
     output: true
+    permalink: /:collection/:path/
+  python:
+    output: true
+    permalink: /:collection/:path/
+  # julia:
+  #   output: true
+  #   permalink: /:collection/:path/
+  # polyglot:
+  #   output: true
+  #   permalink: /:collection/:path/
 
 # HTML Compression
 # - http://jch.penibelst.de/
@@ -317,12 +328,20 @@ defaults:
     values:
       layout: single
       author_profile: true
-  # _r_notebooks
+  # _r
   - scope:
       path: ""
-      type: rmd
+      type: r
     values:
       layout: rmd
+      author_profile: false
+      share: true
+  # _python
+  - scope:
+      path: ""
+      type: python
+    values:
+      layout: jnb
       author_profile: false
       share: true
 

@@ -1,0 +1,332 @@
+---
+title: "Gradient Boosting with XGBoost and the Agaricus Dataset"
+permalink: /r/xgboost-agaricus
+excerpt: "What to do when things go too well. Building and comparing XGBoost and Random Forest models on the Agaricus dataset (Mushroom Database)."
+categories: [r, multimodel, classification]
+tags: [r, agaricus, synthetic, RandomForest, XGBoost]
+layout: rmd
+author: "Ryan Gust"
+date: 2018-12-26
+updated: 2018-12-26
+header:
+  teaser: assets/images/thumbs/chart-unsplash-lchesser.png
+---
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>This notebook will take a look at agaricus dataset (Mushroom Database) originally drawn from The Audubon Society Field Guide to North American Mushrooms and hosted in the UCI Machine Learning Repository.</p>
+<p>The goal is to create model that can accurately differentiate between edible and poisonous mushrooms.</p>
+<p>To do this two models will be used: * sklearn’s RandomForestClassifer * XGBoost’s XGBClassifier</p>
+<p>Each model will be used on both a simple numeric mapping and a one-hot encoding of the dataset. In addition to model performance, feature importances will be examined for each model and decision trees built when possible.</p>
+<div id="imports" class="section level3">
+<h3>Imports</h3>
+<pre class="r"><code>library(tidyverse)
+library(xgboost)
+library(caret)
+library(ranger) # fast Random Forest
+library(mltools) # onehot encoding
+library(data.table)</code></pre>
+</div>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>The dataset may be obtained from:</p>
+<p><a href="https://archive.ics.uci.edu/ml/datasets/mushroom" class="uri">https://archive.ics.uci.edu/ml/datasets/mushroom</a> or <a href="https://www.kaggle.com/uciml/mushroom-classification" class="uri">https://www.kaggle.com/uciml/mushroom-classification</a></p>
+<p>Additionally, a dataset is used from the XGBoost repository which can be found here:<br> <a href="https://github.com/dmlc/xgboost/tree/master/demo/data" class="uri">https://github.com/dmlc/xgboost/tree/master/demo/data</a></p>
+<p>The Kaggle link is preferred simply for convenience as the columns have already been labeled with sensible names.</p>
+<p>This dataset includes descriptions of hypothetical samples corresponding to 23 species of gilled mushrooms in the Agaricus and Lepiota Family Mushroom drawn from The Audubon Society Field Guide to North American Mushrooms (1981). Each species is identified as definitely edible, definitely poisonous, or of unknown edibility and not recommended. This latter class was combined with the poisonous one.</p>
+<p>Each entry in dataset contains only a single letter, a reference table containing corresponding meanings can be found in <code>data/agaricus-lepiota.names</code> or at <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.names" class="uri">https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.names</a></p>
+<pre class="r"><code>data(agaricus.train, package=&#39;xgboost&#39;)
+data(agaricus.test, package=&#39;xgboost&#39;)
+train &lt;- agaricus.train
+test &lt;- agaricus.test</code></pre>
+<pre class="r"><code>glimpse(train)</code></pre>
+<pre><code>## List of 2
+##  $ data :Formal class &#39;dgCMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
+##   .. ..@ i       : int [1:143286] 2 6 8 11 18 20 21 24 28 32 ...
+##   .. ..@ p       : int [1:127] 0 369 372 3306 5845 6489 6513 8380 8384 10991 ...
+##   .. ..@ Dim     : int [1:2] 6513 126
+##   .. ..@ Dimnames:List of 2
+##   .. ..@ x       : num [1:143286] 1 1 1 1 1 1 1 1 1 1 ...
+##   .. ..@ factors : list()
+##  $ label: num [1:6513] 1 0 0 1 0 0 0 1 0 0 ...</code></pre>
+<p>XGBoost includes the agaricus dataset by default as example data. To keep it small, they’ve represented the set as a sparce matrix. This is a fantastic way to limit the size of a dataset, but it isn’t exactly easily interperatable.</p>
+<pre class="r"><code># Same dataset, but with legible names
+head(agar &lt;- read.csv(&#39;data/mushrooms.csv&#39;))</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["class"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["cap.shape"],"name":[2],"type":["fctr"],"align":["left"]},{"label":["cap.surface"],"name":[3],"type":["fctr"],"align":["left"]},{"label":["cap.color"],"name":[4],"type":["fctr"],"align":["left"]},{"label":["bruises"],"name":[5],"type":["fctr"],"align":["left"]},{"label":["odor"],"name":[6],"type":["fctr"],"align":["left"]},{"label":["gill.attachment"],"name":[7],"type":["fctr"],"align":["left"]},{"label":["gill.spacing"],"name":[8],"type":["fctr"],"align":["left"]},{"label":["gill.size"],"name":[9],"type":["fctr"],"align":["left"]},{"label":["gill.color"],"name":[10],"type":["fctr"],"align":["left"]},{"label":["stalk.shape"],"name":[11],"type":["fctr"],"align":["left"]},{"label":["stalk.root"],"name":[12],"type":["fctr"],"align":["left"]},{"label":["stalk.surface.above.ring"],"name":[13],"type":["fctr"],"align":["left"]},{"label":["stalk.surface.below.ring"],"name":[14],"type":["fctr"],"align":["left"]},{"label":["stalk.color.above.ring"],"name":[15],"type":["fctr"],"align":["left"]},{"label":["stalk.color.below.ring"],"name":[16],"type":["fctr"],"align":["left"]},{"label":["veil.type"],"name":[17],"type":["fctr"],"align":["left"]},{"label":["veil.color"],"name":[18],"type":["fctr"],"align":["left"]},{"label":["ring.number"],"name":[19],"type":["fctr"],"align":["left"]},{"label":["ring.type"],"name":[20],"type":["fctr"],"align":["left"]},{"label":["spore.print.color"],"name":[21],"type":["fctr"],"align":["left"]},{"label":["population"],"name":[22],"type":["fctr"],"align":["left"]},{"label":["habitat"],"name":[23],"type":["fctr"],"align":["left"]}],"data":[{"1":"p","2":"x","3":"s","4":"n","5":"t","6":"p","7":"f","8":"c","9":"n","10":"k","11":"e","12":"e","13":"s","14":"s","15":"w","16":"w","17":"p","18":"w","19":"o","20":"p","21":"k","22":"s","23":"u","_rn_":"1"},{"1":"e","2":"x","3":"s","4":"y","5":"t","6":"a","7":"f","8":"c","9":"b","10":"k","11":"e","12":"c","13":"s","14":"s","15":"w","16":"w","17":"p","18":"w","19":"o","20":"p","21":"n","22":"n","23":"g","_rn_":"2"},{"1":"e","2":"b","3":"s","4":"w","5":"t","6":"l","7":"f","8":"c","9":"b","10":"n","11":"e","12":"c","13":"s","14":"s","15":"w","16":"w","17":"p","18":"w","19":"o","20":"p","21":"n","22":"n","23":"m","_rn_":"3"},{"1":"p","2":"x","3":"y","4":"w","5":"t","6":"p","7":"f","8":"c","9":"n","10":"n","11":"e","12":"e","13":"s","14":"s","15":"w","16":"w","17":"p","18":"w","19":"o","20":"p","21":"k","22":"s","23":"u","_rn_":"4"},{"1":"e","2":"x","3":"s","4":"g","5":"f","6":"n","7":"f","8":"w","9":"b","10":"k","11":"t","12":"e","13":"s","14":"s","15":"w","16":"w","17":"p","18":"w","19":"o","20":"e","21":"n","22":"a","23":"g","_rn_":"5"},{"1":"e","2":"x","3":"y","4":"y","5":"t","6":"a","7":"f","8":"c","9":"b","10":"n","11":"e","12":"c","13":"s","14":"s","15":"w","16":"w","17":"p","18":"w","19":"o","20":"p","21":"k","22":"n","23":"g","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>The kaggle provided dataset is much more human friendly, providing factor codes for each column.</p>
+</div>
+<div id="exploratory-data-analysis" class="section level2">
+<h2>Exploratory Data Analysis</h2>
+<p>Short of one variable having with NA values, this dataset is quite clean. It is entirely comprised of categorical values, each with a relatively low cardinality. It is slightly imbalanced, having 4208 (51.8%) entries marked as edible and 3916 (48.2%) marked poisonous, a small discrepancy, but it shouldn’t significantly affect our model.</p>
+<pre class="r"><code>dim(train$data)</code></pre>
+<pre><code>## [1] 6513  126</code></pre>
+<pre class="r"><code>dim(test$data)</code></pre>
+<pre><code>## [1] 1611  126</code></pre>
+<pre class="r"><code>head(train$data, n=10)</code></pre>
+<pre><code>##  [1] 0 0 1 0 0 0 1 0 1 0</code></pre>
+<pre class="r"><code>str(agar)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    8124 obs. of  23 variables:
+##  $ class                   : Factor w/ 2 levels &quot;e&quot;,&quot;p&quot;: 2 1 1 2 1 1 1 1 2 1 ...
+##  $ cap.shape               : Factor w/ 6 levels &quot;b&quot;,&quot;c&quot;,&quot;f&quot;,&quot;k&quot;,..: 6 6 1 6 6 6 1 1 6 1 ...
+##  $ cap.surface             : Factor w/ 4 levels &quot;f&quot;,&quot;g&quot;,&quot;s&quot;,&quot;y&quot;: 3 3 3 4 3 4 3 4 4 3 ...
+##  $ cap.color               : Factor w/ 10 levels &quot;b&quot;,&quot;c&quot;,&quot;e&quot;,&quot;g&quot;,..: 5 10 9 9 4 10 9 9 9 10 ...
+##  $ bruises                 : Factor w/ 2 levels &quot;f&quot;,&quot;t&quot;: 2 2 2 2 1 2 2 2 2 2 ...
+##  $ odor                    : Factor w/ 9 levels &quot;a&quot;,&quot;c&quot;,&quot;f&quot;,&quot;l&quot;,..: 7 1 4 7 6 1 1 4 7 1 ...
+##  $ gill.attachment         : Factor w/ 2 levels &quot;a&quot;,&quot;f&quot;: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ gill.spacing            : Factor w/ 2 levels &quot;c&quot;,&quot;w&quot;: 1 1 1 1 2 1 1 1 1 1 ...
+##  $ gill.size               : Factor w/ 2 levels &quot;b&quot;,&quot;n&quot;: 2 1 1 2 1 1 1 1 2 1 ...
+##  $ gill.color              : Factor w/ 12 levels &quot;b&quot;,&quot;e&quot;,&quot;g&quot;,&quot;h&quot;,..: 5 5 6 6 5 6 3 6 8 3 ...
+##  $ stalk.shape             : Factor w/ 2 levels &quot;e&quot;,&quot;t&quot;: 1 1 1 1 2 1 1 1 1 1 ...
+##  $ stalk.root              : Factor w/ 5 levels &quot;?&quot;,&quot;b&quot;,&quot;c&quot;,&quot;e&quot;,..: 4 3 3 4 4 3 3 3 4 3 ...
+##  $ stalk.surface.above.ring: Factor w/ 4 levels &quot;f&quot;,&quot;k&quot;,&quot;s&quot;,&quot;y&quot;: 3 3 3 3 3 3 3 3 3 3 ...
+##  $ stalk.surface.below.ring: Factor w/ 4 levels &quot;f&quot;,&quot;k&quot;,&quot;s&quot;,&quot;y&quot;: 3 3 3 3 3 3 3 3 3 3 ...
+##  $ stalk.color.above.ring  : Factor w/ 9 levels &quot;b&quot;,&quot;c&quot;,&quot;e&quot;,&quot;g&quot;,..: 8 8 8 8 8 8 8 8 8 8 ...
+##  $ stalk.color.below.ring  : Factor w/ 9 levels &quot;b&quot;,&quot;c&quot;,&quot;e&quot;,&quot;g&quot;,..: 8 8 8 8 8 8 8 8 8 8 ...
+##  $ veil.type               : Factor w/ 1 level &quot;p&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ veil.color              : Factor w/ 4 levels &quot;n&quot;,&quot;o&quot;,&quot;w&quot;,&quot;y&quot;: 3 3 3 3 3 3 3 3 3 3 ...
+##  $ ring.number             : Factor w/ 3 levels &quot;n&quot;,&quot;o&quot;,&quot;t&quot;: 2 2 2 2 2 2 2 2 2 2 ...
+##  $ ring.type               : Factor w/ 5 levels &quot;e&quot;,&quot;f&quot;,&quot;l&quot;,&quot;n&quot;,..: 5 5 5 5 1 5 5 5 5 5 ...
+##  $ spore.print.color       : Factor w/ 9 levels &quot;b&quot;,&quot;h&quot;,&quot;k&quot;,&quot;n&quot;,..: 3 4 4 3 4 3 3 4 3 3 ...
+##  $ population              : Factor w/ 6 levels &quot;a&quot;,&quot;c&quot;,&quot;n&quot;,&quot;s&quot;,..: 4 3 3 4 1 3 3 4 5 4 ...
+##  $ habitat                 : Factor w/ 7 levels &quot;d&quot;,&quot;g&quot;,&quot;l&quot;,&quot;m&quot;,..: 6 2 4 6 2 2 4 4 2 4 ...</code></pre>
+<p><code>str()</code> truly is a powerful tool, there are 3 primary things are worth noting here:</p>
+<ul>
+<li>The highest caridinality we see in any single column is 12 for <code>gill.color</code>.</li>
+<li><code>stalk.root</code> contains “?” as one of its factors, likely representing a missing value</li>
+<li><code>veil.type</code> only has a single value, meaning that it will contribute nothing to our classification models.</li>
+</ul>
+<pre class="r"><code>agar.dt &lt;- agar %&gt;% as.data.table() %&gt;% select(-c(veil.type))
+head(agar.oh &lt;- one_hot(agar.dt, cols = colnames(subset(agar.dt, select = -class))))</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["class"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["cap.shape_b"],"name":[2],"type":["int"],"align":["right"]},{"label":["cap.shape_c"],"name":[3],"type":["int"],"align":["right"]},{"label":["cap.shape_f"],"name":[4],"type":["int"],"align":["right"]},{"label":["cap.shape_k"],"name":[5],"type":["int"],"align":["right"]},{"label":["cap.shape_s"],"name":[6],"type":["int"],"align":["right"]},{"label":["cap.shape_x"],"name":[7],"type":["int"],"align":["right"]},{"label":["cap.surface_f"],"name":[8],"type":["int"],"align":["right"]},{"label":["cap.surface_g"],"name":[9],"type":["int"],"align":["right"]},{"label":["cap.surface_s"],"name":[10],"type":["int"],"align":["right"]},{"label":["cap.surface_y"],"name":[11],"type":["int"],"align":["right"]},{"label":["cap.color_b"],"name":[12],"type":["int"],"align":["right"]},{"label":["cap.color_c"],"name":[13],"type":["int"],"align":["right"]},{"label":["cap.color_e"],"name":[14],"type":["int"],"align":["right"]},{"label":["cap.color_g"],"name":[15],"type":["int"],"align":["right"]},{"label":["cap.color_n"],"name":[16],"type":["int"],"align":["right"]},{"label":["cap.color_p"],"name":[17],"type":["int"],"align":["right"]},{"label":["cap.color_r"],"name":[18],"type":["int"],"align":["right"]},{"label":["cap.color_u"],"name":[19],"type":["int"],"align":["right"]},{"label":["cap.color_w"],"name":[20],"type":["int"],"align":["right"]},{"label":["cap.color_y"],"name":[21],"type":["int"],"align":["right"]},{"label":["bruises_f"],"name":[22],"type":["int"],"align":["right"]},{"label":["bruises_t"],"name":[23],"type":["int"],"align":["right"]},{"label":["odor_a"],"name":[24],"type":["int"],"align":["right"]},{"label":["odor_c"],"name":[25],"type":["int"],"align":["right"]},{"label":["odor_f"],"name":[26],"type":["int"],"align":["right"]},{"label":["odor_l"],"name":[27],"type":["int"],"align":["right"]},{"label":["odor_m"],"name":[28],"type":["int"],"align":["right"]},{"label":["odor_n"],"name":[29],"type":["int"],"align":["right"]},{"label":["odor_p"],"name":[30],"type":["int"],"align":["right"]},{"label":["odor_s"],"name":[31],"type":["int"],"align":["right"]},{"label":["odor_y"],"name":[32],"type":["int"],"align":["right"]},{"label":["gill.attachment_a"],"name":[33],"type":["int"],"align":["right"]},{"label":["gill.attachment_f"],"name":[34],"type":["int"],"align":["right"]},{"label":["gill.spacing_c"],"name":[35],"type":["int"],"align":["right"]},{"label":["gill.spacing_w"],"name":[36],"type":["int"],"align":["right"]},{"label":["gill.size_b"],"name":[37],"type":["int"],"align":["right"]},{"label":["gill.size_n"],"name":[38],"type":["int"],"align":["right"]},{"label":["gill.color_b"],"name":[39],"type":["int"],"align":["right"]},{"label":["gill.color_e"],"name":[40],"type":["int"],"align":["right"]},{"label":["gill.color_g"],"name":[41],"type":["int"],"align":["right"]},{"label":["gill.color_h"],"name":[42],"type":["int"],"align":["right"]},{"label":["gill.color_k"],"name":[43],"type":["int"],"align":["right"]},{"label":["gill.color_n"],"name":[44],"type":["int"],"align":["right"]},{"label":["gill.color_o"],"name":[45],"type":["int"],"align":["right"]},{"label":["gill.color_p"],"name":[46],"type":["int"],"align":["right"]},{"label":["gill.color_r"],"name":[47],"type":["int"],"align":["right"]},{"label":["gill.color_u"],"name":[48],"type":["int"],"align":["right"]},{"label":["gill.color_w"],"name":[49],"type":["int"],"align":["right"]},{"label":["gill.color_y"],"name":[50],"type":["int"],"align":["right"]},{"label":["stalk.shape_e"],"name":[51],"type":["int"],"align":["right"]},{"label":["stalk.shape_t"],"name":[52],"type":["int"],"align":["right"]},{"label":["stalk.root_?"],"name":[53],"type":["int"],"align":["right"]},{"label":["stalk.root_b"],"name":[54],"type":["int"],"align":["right"]},{"label":["stalk.root_c"],"name":[55],"type":["int"],"align":["right"]},{"label":["stalk.root_e"],"name":[56],"type":["int"],"align":["right"]},{"label":["stalk.root_r"],"name":[57],"type":["int"],"align":["right"]},{"label":["stalk.surface.above.ring_f"],"name":[58],"type":["int"],"align":["right"]},{"label":["stalk.surface.above.ring_k"],"name":[59],"type":["int"],"align":["right"]},{"label":["stalk.surface.above.ring_s"],"name":[60],"type":["int"],"align":["right"]},{"label":["stalk.surface.above.ring_y"],"name":[61],"type":["int"],"align":["right"]},{"label":["stalk.surface.below.ring_f"],"name":[62],"type":["int"],"align":["right"]},{"label":["stalk.surface.below.ring_k"],"name":[63],"type":["int"],"align":["right"]},{"label":["stalk.surface.below.ring_s"],"name":[64],"type":["int"],"align":["right"]},{"label":["stalk.surface.below.ring_y"],"name":[65],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_b"],"name":[66],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_c"],"name":[67],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_e"],"name":[68],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_g"],"name":[69],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_n"],"name":[70],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_o"],"name":[71],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_p"],"name":[72],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_w"],"name":[73],"type":["int"],"align":["right"]},{"label":["stalk.color.above.ring_y"],"name":[74],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_b"],"name":[75],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_c"],"name":[76],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_e"],"name":[77],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_g"],"name":[78],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_n"],"name":[79],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_o"],"name":[80],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_p"],"name":[81],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_w"],"name":[82],"type":["int"],"align":["right"]},{"label":["stalk.color.below.ring_y"],"name":[83],"type":["int"],"align":["right"]},{"label":["veil.color_n"],"name":[84],"type":["int"],"align":["right"]},{"label":["veil.color_o"],"name":[85],"type":["int"],"align":["right"]},{"label":["veil.color_w"],"name":[86],"type":["int"],"align":["right"]},{"label":["veil.color_y"],"name":[87],"type":["int"],"align":["right"]},{"label":["ring.number_n"],"name":[88],"type":["int"],"align":["right"]},{"label":["ring.number_o"],"name":[89],"type":["int"],"align":["right"]},{"label":["ring.number_t"],"name":[90],"type":["int"],"align":["right"]},{"label":["ring.type_e"],"name":[91],"type":["int"],"align":["right"]},{"label":["ring.type_f"],"name":[92],"type":["int"],"align":["right"]},{"label":["ring.type_l"],"name":[93],"type":["int"],"align":["right"]},{"label":["ring.type_n"],"name":[94],"type":["int"],"align":["right"]},{"label":["ring.type_p"],"name":[95],"type":["int"],"align":["right"]},{"label":["spore.print.color_b"],"name":[96],"type":["int"],"align":["right"]},{"label":["spore.print.color_h"],"name":[97],"type":["int"],"align":["right"]},{"label":["spore.print.color_k"],"name":[98],"type":["int"],"align":["right"]},{"label":["spore.print.color_n"],"name":[99],"type":["int"],"align":["right"]},{"label":["spore.print.color_o"],"name":[100],"type":["int"],"align":["right"]},{"label":["spore.print.color_r"],"name":[101],"type":["int"],"align":["right"]},{"label":["spore.print.color_u"],"name":[102],"type":["int"],"align":["right"]},{"label":["spore.print.color_w"],"name":[103],"type":["int"],"align":["right"]},{"label":["spore.print.color_y"],"name":[104],"type":["int"],"align":["right"]},{"label":["population_a"],"name":[105],"type":["int"],"align":["right"]},{"label":["population_c"],"name":[106],"type":["int"],"align":["right"]},{"label":["population_n"],"name":[107],"type":["int"],"align":["right"]},{"label":["population_s"],"name":[108],"type":["int"],"align":["right"]},{"label":["population_v"],"name":[109],"type":["int"],"align":["right"]},{"label":["population_y"],"name":[110],"type":["int"],"align":["right"]},{"label":["habitat_d"],"name":[111],"type":["int"],"align":["right"]},{"label":["habitat_g"],"name":[112],"type":["int"],"align":["right"]},{"label":["habitat_l"],"name":[113],"type":["int"],"align":["right"]},{"label":["habitat_m"],"name":[114],"type":["int"],"align":["right"]},{"label":["habitat_p"],"name":[115],"type":["int"],"align":["right"]},{"label":["habitat_u"],"name":[116],"type":["int"],"align":["right"]},{"label":["habitat_w"],"name":[117],"type":["int"],"align":["right"]}],"data":[{"1":"p","2":"0","3":"0","4":"0","5":"0","6":"0","7":"1","8":"0","9":"0","10":"1","11":"0","12":"0","13":"0","14":"0","15":"0","16":"1","17":"0","18":"0","19":"0","20":"0","21":"0","22":"0","23":"1","24":"0","25":"0","26":"0","27":"0","28":"0","29":"0","30":"1","31":"0","32":"0","33":"0","34":"1","35":"1","36":"0","37":"0","38":"1","39":"0","40":"0","41":"0","42":"0","43":"1","44":"0","45":"0","46":"0","47":"0","48":"0","49":"0","50":"0","51":"1","52":"0","53":"0","54":"0","55":"0","56":"1","57":"0","58":"0","59":"0","60":"1","61":"0","62":"0","63":"0","64":"1","65":"0","66":"0","67":"0","68":"0","69":"0","70":"0","71":"0","72":"0","73":"1","74":"0","75":"0","76":"0","77":"0","78":"0","79":"0","80":"0","81":"0","82":"1","83":"0","84":"0","85":"0","86":"1","87":"0","88":"0","89":"1","90":"0","91":"0","92":"0","93":"0","94":"0","95":"1","96":"0","97":"0","98":"1","99":"0","100":"0","101":"0","102":"0","103":"0","104":"0","105":"0","106":"0","107":"0","108":"1","109":"0","110":"0","111":"0","112":"0","113":"0","114":"0","115":"0","116":"1","117":"0"},{"1":"e","2":"0","3":"0","4":"0","5":"0","6":"0","7":"1","8":"0","9":"0","10":"1","11":"0","12":"0","13":"0","14":"0","15":"0","16":"0","17":"0","18":"0","19":"0","20":"0","21":"1","22":"0","23":"1","24":"1","25":"0","26":"0","27":"0","28":"0","29":"0","30":"0","31":"0","32":"0","33":"0","34":"1","35":"1","36":"0","37":"1","38":"0","39":"0","40":"0","41":"0","42":"0","43":"1","44":"0","45":"0","46":"0","47":"0","48":"0","49":"0","50":"0","51":"1","52":"0","53":"0","54":"0","55":"1","56":"0","57":"0","58":"0","59":"0","60":"1","61":"0","62":"0","63":"0","64":"1","65":"0","66":"0","67":"0","68":"0","69":"0","70":"0","71":"0","72":"0","73":"1","74":"0","75":"0","76":"0","77":"0","78":"0","79":"0","80":"0","81":"0","82":"1","83":"0","84":"0","85":"0","86":"1","87":"0","88":"0","89":"1","90":"0","91":"0","92":"0","93":"0","94":"0","95":"1","96":"0","97":"0","98":"0","99":"1","100":"0","101":"0","102":"0","103":"0","104":"0","105":"0","106":"0","107":"1","108":"0","109":"0","110":"0","111":"0","112":"1","113":"0","114":"0","115":"0","116":"0","117":"0"},{"1":"e","2":"1","3":"0","4":"0","5":"0","6":"0","7":"0","8":"0","9":"0","10":"1","11":"0","12":"0","13":"0","14":"0","15":"0","16":"0","17":"0","18":"0","19":"0","20":"1","21":"0","22":"0","23":"1","24":"0","25":"0","26":"0","27":"1","28":"0","29":"0","30":"0","31":"0","32":"0","33":"0","34":"1","35":"1","36":"0","37":"1","38":"0","39":"0","40":"0","41":"0","42":"0","43":"0","44":"1","45":"0","46":"0","47":"0","48":"0","49":"0","50":"0","51":"1","52":"0","53":"0","54":"0","55":"1","56":"0","57":"0","58":"0","59":"0","60":"1","61":"0","62":"0","63":"0","64":"1","65":"0","66":"0","67":"0","68":"0","69":"0","70":"0","71":"0","72":"0","73":"1","74":"0","75":"0","76":"0","77":"0","78":"0","79":"0","80":"0","81":"0","82":"1","83":"0","84":"0","85":"0","86":"1","87":"0","88":"0","89":"1","90":"0","91":"0","92":"0","93":"0","94":"0","95":"1","96":"0","97":"0","98":"0","99":"1","100":"0","101":"0","102":"0","103":"0","104":"0","105":"0","106":"0","107":"1","108":"0","109":"0","110":"0","111":"0","112":"0","113":"0","114":"1","115":"0","116":"0","117":"0"},{"1":"p","2":"0","3":"0","4":"0","5":"0","6":"0","7":"1","8":"0","9":"0","10":"0","11":"1","12":"0","13":"0","14":"0","15":"0","16":"0","17":"0","18":"0","19":"0","20":"1","21":"0","22":"0","23":"1","24":"0","25":"0","26":"0","27":"0","28":"0","29":"0","30":"1","31":"0","32":"0","33":"0","34":"1","35":"1","36":"0","37":"0","38":"1","39":"0","40":"0","41":"0","42":"0","43":"0","44":"1","45":"0","46":"0","47":"0","48":"0","49":"0","50":"0","51":"1","52":"0","53":"0","54":"0","55":"0","56":"1","57":"0","58":"0","59":"0","60":"1","61":"0","62":"0","63":"0","64":"1","65":"0","66":"0","67":"0","68":"0","69":"0","70":"0","71":"0","72":"0","73":"1","74":"0","75":"0","76":"0","77":"0","78":"0","79":"0","80":"0","81":"0","82":"1","83":"0","84":"0","85":"0","86":"1","87":"0","88":"0","89":"1","90":"0","91":"0","92":"0","93":"0","94":"0","95":"1","96":"0","97":"0","98":"1","99":"0","100":"0","101":"0","102":"0","103":"0","104":"0","105":"0","106":"0","107":"0","108":"1","109":"0","110":"0","111":"0","112":"0","113":"0","114":"0","115":"0","116":"1","117":"0"},{"1":"e","2":"0","3":"0","4":"0","5":"0","6":"0","7":"1","8":"0","9":"0","10":"1","11":"0","12":"0","13":"0","14":"0","15":"1","16":"0","17":"0","18":"0","19":"0","20":"0","21":"0","22":"1","23":"0","24":"0","25":"0","26":"0","27":"0","28":"0","29":"1","30":"0","31":"0","32":"0","33":"0","34":"1","35":"0","36":"1","37":"1","38":"0","39":"0","40":"0","41":"0","42":"0","43":"1","44":"0","45":"0","46":"0","47":"0","48":"0","49":"0","50":"0","51":"0","52":"1","53":"0","54":"0","55":"0","56":"1","57":"0","58":"0","59":"0","60":"1","61":"0","62":"0","63":"0","64":"1","65":"0","66":"0","67":"0","68":"0","69":"0","70":"0","71":"0","72":"0","73":"1","74":"0","75":"0","76":"0","77":"0","78":"0","79":"0","80":"0","81":"0","82":"1","83":"0","84":"0","85":"0","86":"1","87":"0","88":"0","89":"1","90":"0","91":"1","92":"0","93":"0","94":"0","95":"0","96":"0","97":"0","98":"0","99":"1","100":"0","101":"0","102":"0","103":"0","104":"0","105":"1","106":"0","107":"0","108":"0","109":"0","110":"0","111":"0","112":"1","113":"0","114":"0","115":"0","116":"0","117":"0"},{"1":"e","2":"0","3":"0","4":"0","5":"0","6":"0","7":"1","8":"0","9":"0","10":"0","11":"1","12":"0","13":"0","14":"0","15":"0","16":"0","17":"0","18":"0","19":"0","20":"0","21":"1","22":"0","23":"1","24":"1","25":"0","26":"0","27":"0","28":"0","29":"0","30":"0","31":"0","32":"0","33":"0","34":"1","35":"1","36":"0","37":"1","38":"0","39":"0","40":"0","41":"0","42":"0","43":"0","44":"1","45":"0","46":"0","47":"0","48":"0","49":"0","50":"0","51":"1","52":"0","53":"0","54":"0","55":"1","56":"0","57":"0","58":"0","59":"0","60":"1","61":"0","62":"0","63":"0","64":"1","65":"0","66":"0","67":"0","68":"0","69":"0","70":"0","71":"0","72":"0","73":"1","74":"0","75":"0","76":"0","77":"0","78":"0","79":"0","80":"0","81":"0","82":"1","83":"0","84":"0","85":"0","86":"1","87":"0","88":"0","89":"1","90":"0","91":"0","92":"0","93":"0","94":"0","95":"1","96":"0","97":"0","98":"1","99":"0","100":"0","101":"0","102":"0","103":"0","104":"0","105":"0","106":"0","107":"1","108":"0","109":"0","110":"0","111":"0","112":"1","113":"0","114":"0","115":"0","116":"0","117":"0"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<pre class="r"><code>agar.oh$class &lt;- as.factor(as.numeric(agar.oh$class)-1) # Denote (p)osionious = 1, (e)atible = 0
+setnames(agar.oh, old=c(&quot;stalk.root_?&quot;), new=c(&quot;stalk.root_NA&quot;))</code></pre>
+<pre class="r"><code>library(corrplot)
+colo&lt;- colorRampPalette(c(&quot;blue&quot;, &quot;white&quot;, &quot;red&quot;))(200)
+corrplot(cor(data.matrix(agar.dt)), col = colo)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-26-xgboost-rf-agaricus_files/figure-html/unnamed-chunk-10-1.png" width="768" /></p>
+<p>Two variable pairs have extremely strong correlations with one another, <code>veil.color</code> + <code>gill.attachment</code> and <code>ring.type</code> + <code>bruises</code>. There are also quite a few features that correlate rather strongly with the response variable, these will be worth keeping in mind durring the later stages of analysis.</p>
+</div>
+<div id="models" class="section level2">
+<h2>Models</h2>
+<div id="random-forest" class="section level3">
+<h3>Random Forest</h3>
+<pre class="r"><code>ttidx &lt;- createDataPartition(agar.oh$class,p=0.70,list = F)
+agar.test &lt;- agar.oh[!ttidx]
+agar.train &lt;- agar.oh[ttidx]</code></pre>
+<pre class="r"><code>#setnames(agar.train, old=c(&quot;stalk.root_?&quot;), new=c(&quot;stalk.root_NA&quot;))
+#setnames(agar.test, old=c(&quot;stalk.root_?&quot;), new=c(&quot;stalk.root_NA&quot;))</code></pre>
+<pre class="r"><code>#train(class~., data = agar.train, method=&quot;rf&quot;, trControl=trainControl(method=&quot;cv&quot;, number=5)) # caret&#39;s rf
+model.rf &lt;- ranger(class~., data = agar.train, importance = &quot;impurity&quot;)</code></pre>
+<p>Using the ranger library rather than caret’s Random Forest implementation reduced the run time from several minutes to ~2 seconds.</p>
+<pre class="r"><code>preds.rf &lt;- predict(model.rf, data = agar.test)
+confusionMatrix(preds.rf$predictions, agar.test$class)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 1262    0
+##          1    0 1174
+##                                      
+##                Accuracy : 1          
+##                  95% CI : (0.9985, 1)
+##     No Information Rate : 0.5181     
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
+##                                      
+##                   Kappa : 1          
+##                                      
+##  Mcnemar&#39;s Test P-Value : NA         
+##                                      
+##             Sensitivity : 1.0000     
+##             Specificity : 1.0000     
+##          Pos Pred Value : 1.0000     
+##          Neg Pred Value : 1.0000     
+##              Prevalence : 0.5181     
+##          Detection Rate : 0.5181     
+##    Detection Prevalence : 0.5181     
+##       Balanced Accuracy : 1.0000     
+##                                      
+##        &#39;Positive&#39; Class : 0          
+## </code></pre>
+<p>Using no fancy tricks, no model tuning, we end up with a perfect classification. Now, whenever we see a model perform perfect classification, as a good data scientist, the first thing one should think is “oh no, what did I do wrong..”</p>
+<p>So, let’s dig in to the model and see if we can learn a bit more about how this scenario came to be. A couple common things to check for could be: * Was any overlap introduced between training and test set? * Could there be <a href="https://machinelearningmastery.com/data-leakage-machine-learning/">data leakage</a> between the response variable and any of the features? * Was the testing set substainly less complicated than the training set?</p>
+<pre class="r"><code>imps.rf &lt;-setnames(setDT(data.frame(importance = importance(model.rf)), keep.rownames = TRUE)[], 1, &quot;feature&quot;)
+imps.rf$feature &lt;- as.factor(imps.rf$feature)</code></pre>
+<p>To start off, let’s have a look at which features were determined to be important by the Random Forest model.</p>
+<pre class="r"><code>imps.rf %&gt;% 
+  mutate(featgrp=strsplit(as.character(imps.rf$feature),&quot;_&quot;) %&gt;% lapply(`[[`, 1)%&gt;% unlist()) %&gt;% 
+  top_n(35,wt=importance) %&gt;%
+  ggplot(aes(x=reorder(feature,desc(importance)), fill=as.factor(featgrp), weight=importance)) +
+  geom_bar() +
+  theme(legend.position=&quot;none&quot;, axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x=&quot;Feature&quot;, y=&quot;Importance&quot;, title=&quot;ranger Gini impurity feature importance (colored by parent group)&quot;)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-26-xgboost-rf-agaricus_files/figure-html/unnamed-chunk-16-1.png" width="768" /></p>
+<p>Two odor variables and two gill.size variables are responsible for a large portion of feature importance.</p>
+<pre class="r"><code>imps.rf %&gt;% 
+  group_by(featgrp=strsplit(as.character(feature),&quot;_&quot;) %&gt;% lapply(`[[`, 1)%&gt;% unlist()) %&gt;% 
+  summarise(group_importance = sum(importance)) %&gt;% 
+  ggplot(aes(x=reorder(featgrp,desc(group_importance)), fill=as.factor(featgrp), weight=group_importance)) +
+  geom_bar() +
+  theme(legend.position=&quot;none&quot;, axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x=&quot;Feature Group&quot;, y=&quot;Importance&quot;, title=&quot;Total feature importance by group&quot;)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-26-xgboost-rf-agaricus_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p>Combining the features by their parent groups gives us a better understanding of how each variable contributes to the model. Odor, by far, is contributing the most in total. If there is any colinearity between predictors and response, these variables would be good place to start the investigation.</p>
+</div>
+<div id="xgboost" class="section level3">
+<h3>XGBoost</h3>
+<pre class="r"><code>library(xgboost)
+dtrn &lt;-  as.matrix(subset(agar.train, select = -class))
+dtrnlab &lt;- as.matrix(agar.train$class)
+dtst &lt;-  as.matrix(subset(agar.test, select = -class))
+dtstlab &lt;- as.matrix(agar.test$class)
+
+agar.train.dmx &lt;- xgb.DMatrix(data = dtrn, label=dtrnlab)
+agar.test.dmx &lt;- xgb.DMatrix(data = dtst, label=dtstlab)
+
+model.bst &lt;- xgboost(data = agar.train.dmx, max.depth = 2, eta = 1, nthread = 2, nrounds = 2, objective = &quot;binary:logistic&quot;)</code></pre>
+<pre><code>## [1]  train-error:0.045886 
+## [2]  train-error:0.021097</code></pre>
+<pre class="r"><code>preds.bst &lt;- predict(model.bst, agar.test.dmx)
+preds.bst.bin &lt;- as.numeric(preds.bst &gt; 0.5)</code></pre>
+<pre class="r"><code>confusionMatrix(as.factor(preds.bst.bin), as.factor(dtstlab))</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    0    1
+##          0 1233   31
+##          1   29 1143
+##                                           
+##                Accuracy : 0.9754          
+##                  95% CI : (0.9684, 0.9812)
+##     No Information Rate : 0.5181          
+##     P-Value [Acc &gt; NIR] : &lt;2e-16          
+##                                           
+##                   Kappa : 0.9507          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.8973          
+##                                           
+##             Sensitivity : 0.9770          
+##             Specificity : 0.9736          
+##          Pos Pred Value : 0.9755          
+##          Neg Pred Value : 0.9753          
+##              Prevalence : 0.5181          
+##          Detection Rate : 0.5062          
+##    Detection Prevalence : 0.5189          
+##       Balanced Accuracy : 0.9753          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>dtrain &lt;- xgb.DMatrix(data = train$data, label=train$label)
+dtest &lt;- xgb.DMatrix(data = test$data, label=test$label)
+
+bstDMatrix &lt;- xgboost(data = dtrain, max.depth = 2, eta = 1, nthread = 2, nrounds = 2, objective = &quot;binary:logistic&quot;)</code></pre>
+<pre><code>## [1]  train-error:0.046522 
+## [2]  train-error:0.022263</code></pre>
+<pre class="r"><code>preds &lt;- predict(bstDMatrix, dtest)
+preds.bin &lt;- as.numeric(preds &gt; 0.5)</code></pre>
+<pre class="r"><code>confusionMatrix(as.factor(preds.bin), as.factor(test$label))</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   0   1
+##          0 813  13
+##          1  22 763
+##                                           
+##                Accuracy : 0.9783          
+##                  95% CI : (0.9699, 0.9848)
+##     No Information Rate : 0.5183          
+##     P-Value [Acc &gt; NIR] : &lt;2e-16          
+##                                           
+##                   Kappa : 0.9565          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.1763          
+##                                           
+##             Sensitivity : 0.9737          
+##             Specificity : 0.9832          
+##          Pos Pred Value : 0.9843          
+##          Neg Pred Value : 0.9720          
+##              Prevalence : 0.5183          
+##          Detection Rate : 0.5047          
+##    Detection Prevalence : 0.5127          
+##       Balanced Accuracy : 0.9785          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<pre class="r"><code>watchlist &lt;- list(train=dtrain, test=dtest)
+bst_lin &lt;- xgb.train(data=dtrain, booster = &quot;gblinear&quot;, max.depth=2, nthread = 2, nrounds=2, watchlist=watchlist, eval.metric = &quot;error&quot;, eval.metric = &quot;logloss&quot;, objective = &quot;binary:logistic&quot;)</code></pre>
+<pre><code>## [1]  train-error:0.013511    train-logloss:0.190188  test-error:0.014898 test-logloss:0.194183 
+## [2]  train-error:0.003071    train-logloss:0.082525  test-error:0.002483 test-logloss:0.084925</code></pre>
+<pre class="r"><code>summary(bst_lin)</code></pre>
+<pre><code>##                Length Class              Mode       
+## handle           1    xgb.Booster.handle externalptr
+## raw            893    -none-             raw        
+## niter            1    -none-             numeric    
+## evaluation_log   5    data.table         list       
+## call            10    -none-             call       
+## params           7    -none-             list       
+## callbacks        2    -none-             list       
+## feature_names  126    -none-             character  
+## nfeatures        1    -none-             numeric</code></pre>
+</div>
+</div>
+<div id="conclusions" class="section level2">
+<h2>Conclusions</h2>
+<p>In this notebook we used a Random Forest Classifier and XGBClassifier to attempt to determine if a particular mushroom was toxic when eaten based on its physical characteristics.</p>
+<p>The data was converted into the simplest possible numeric representation and a basic one-hot encoding. Using just default hyperparameters, we were able to obtain four perfect classifiers. After double checking our methods, we arrived at the conclusion that certain parts of the dataset maybe have been easier to predict than others.</p>
+<p>Ever model had a common feature that it found most importance <code>odor</code> and its one-hot derivations. Tracing down a decision tree from the one-hot RF gives some insight to the process, but it is still a far cry from easily interpretable.</p>
+<div id="future-work" class="section level4">
+<h4>Future work:</h4>
+<p>Simplifications to the model are certainly possible, feature reduction could provide additional interpretability. PCA could be used to visualize where clustering may be present among the features. There was no parameter tweaking performed at all, this leaves a lot of untapped potential for some improvements to the models. Finally, CatBoost could work wonders with this dataset given that it is <em>only</em> categorical values, it would be interesting to see how well it performs.</p>
+</div>
+<div id="references" class="section level3">
+<h3>References</h3>
+<p><strong>Code:</strong><br> <a href="https://xgboost.readthedocs.io/en/latest/R-package/xgboostPresentation.html" class="uri">https://xgboost.readthedocs.io/en/latest/R-package/xgboostPresentation.html</a></p>
+<p><a href="https://stackoverflow.com/a/20428775/10939610" class="uri">https://stackoverflow.com/a/20428775/10939610</a></p>
+<p><a href="https://cran.r-project.org/web/packages/ranger/ranger.pdf" class="uri">https://cran.r-project.org/web/packages/ranger/ranger.pdf</a></p>
+<p><a href="https://stackoverflow.com/a/29511387/10939610" class="uri">https://stackoverflow.com/a/29511387/10939610</a></p>
+<p><strong>Text:</strong> <br> <a href="https://archive.ics.uci.edu/ml/datasets/mushroom" class="uri">https://archive.ics.uci.edu/ml/datasets/mushroom</a></p>
+<p><a href="https://www.kaggle.com/uciml/mushroom-classification/home" class="uri">https://www.kaggle.com/uciml/mushroom-classification/home</a></p>
+<p><strong>Other:</strong><br> <a href="http://pbpython.com/categorical-encoding.html" class="uri">http://pbpython.com/categorical-encoding.html</a></p>
+<p><a href="http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html" class="uri">http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html</a></p>
+<p><a href="https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.DMatrix" class="uri">https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.DMatrix</a></p>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

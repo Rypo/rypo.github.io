@@ -1,7 +1,9 @@
 # main links
 main:
-  - title: "Analyses List"
+  - title: "Python Analyses"
     url: /analyses
+  - title: "R Analyses"
+    url: /r
   - title: "About Me"
     url: /about
 #  - title: "Sample Posts"

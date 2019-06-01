@@ -1,0 +1,163 @@
+---
+title: "Plotting Distributions"
+excerpt: "Plotting a few common statistical functions, namely: PDF, CDF, and iCDF"
+permalink: /r/plotting-distributions
+categories: [r, statistics]
+tags: [r, statistics, plotting, probability, functions]
+layout: rmd
+author: "Ryan Gust"
+date: 2018-12-29
+updated: 2018-12-29
+header:
+  teaser: assets/images/thumbs/chart-unsplash-lchesser.png
+---
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>This notebook will demonstrate the plotting of statistical functions with R.</p>
+<p>For a normal distribution and Student’s T distribution (degrees of freedom = 4,8,12,30) the following will be plotted:</p>
+<ul>
+<li><p><strong>Probability Density Function (PDF)</strong> - A function of a continuous random variable, whose integral across an interval denotes the probability that the variable’s value lies within the same interval.</p></li>
+<li><p><strong>Cumulatve Distribution Function (CDF)</strong> - A function whose value is the probability that a corresponding continuous random variable has a value less than or equal to the function’s argumement</p></li>
+<li><p><strong>Quantile Function/Inverse Cumulative Distribution Function</strong> - A function that determines the value of the variable associated with a specific probability, such that the probability of the variable being less than or equal to that value equals the given probability.</p></li>
+</ul>
+<div id="imports" class="section level3">
+<h3>Imports</h3>
+<pre class="r"><code>library(ggplot2)
+library(gridExtra)
+library(tidyverse)
+library(magrittr)</code></pre>
+</div>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>The data used for this analysis is generated with R’s <code>seq</code> function, chosen on an symmetric interval from <em><strong>-e</strong></em> to <em><strong>e</strong></em> which, when used as a z-score, encompasses ~99.67% of a normal distribution</p>
+<p>The variable naming convention used specifies <code>x_norm</code>, <code>x_t</code> as input values and follows a similar form to R for function output values i.e. the variable <code>d_norm</code> corresponds to R’s <code>dnorm</code></p>
+<pre class="r"><code>mu = 0
+sigma = 1
+x_e&lt;- seq(-exp(1), exp(1), length.out = 100)
+quantiles &lt;- seq(0.0033, 0.9967, length.out = 100) # Close for consistency
+
+d_norm &lt;- dnorm(x_e, mean = mu, sd = sigma) # PDF
+p_norm &lt;- pnorm(x_e, mean = mu, sd = sigma) # CDF
+q_norm &lt;- qnorm(quantiles, mean = mu, sd = sigma) # iCDF
+
+df.pdf &lt;- data.frame(x = x_e, y = d_norm)
+df.cdf &lt;- data.frame(x = x_e, y = p_norm)
+df.icdf &lt;- data.frame(x = quantiles, y = q_norm)</code></pre>
+</div>
+<div id="exploratory-data-analysis" class="section level2">
+<h2>Exploratory Data Analysis</h2>
+<p>We will be using an artificially generated dataset for the purpose of this demonstration, as such, no preprocessing is required.</p>
+<div id="normal-distribution" class="section level3">
+<h3>Normal distribution</h3>
+<pre class="r"><code># normal_pdf
+p1 &lt;- df.pdf %&gt;% 
+  ggplot(aes(x, y)) +
+  geom_line(stat = &quot;identity&quot;, col = &quot;red&quot;, size=2) +
+  scale_y_continuous(expand = c(0.01, 0)) + 
+  labs(title = &quot;Normal Probability Density&quot;, x=&quot;x (in SDs)&quot;, y=&quot;Probability Density&quot;) + 
+  theme_bw(16, &quot;serif&quot;) +
+  theme(plot.title = element_text(size = rel(1.2), vjust = 1.5))
+
+# normal_cdf
+p2 &lt;- df.cdf %&gt;% 
+  ggplot(aes(x, y)) +
+  geom_line(stat = &quot;identity&quot;, col = &quot;blue&quot;, size=2) +
+  scale_y_continuous(expand = c(0.01, 0)) +
+  labs(title = &quot;Normal Cumulative Density&quot;, x=&quot;x (in SDs)&quot;,y=&quot;Probability&quot;) +
+  theme_bw(16, &quot;serif&quot;) +
+  theme(plot.title = element_text(size = rel(1.2), vjust = 1.5))
+
+# normal_icdf
+p3 &lt;- df.icdf %&gt;% 
+  ggplot(aes(x, y)) +
+  geom_line(stat = &quot;identity&quot;, col = &quot;green&quot;, size=2) +
+  scale_y_continuous(expand = c(0.01, 0)) + 
+  labs(title = &quot;Normal Inverse CDF&quot;, x=&quot;Probability&quot;,y=&quot;Quantile&quot;) +
+  theme_bw(16, &quot;serif&quot;) +
+  theme(plot.title = element_text(size = rel(1.2), vjust = 1.5))
+
+grid.arrange(grobs=list(p1, p2, p3), layout_matrix = rbind(c(1, 2),c(3, 3)))</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-29-plotting-distributions_files/figure-html/unnamed-chunk-1-1.png" width="768" /></p>
+</div>
+<div id="students-t-distribution" class="section level3">
+<h3>Student’s T Distribution</h3>
+<pre class="r"><code>cset = c(&quot;black&quot;,&quot;orange&quot;,&quot;green&quot;,&quot;blue&quot;,&quot;red&quot;)
+#cset = c(&quot;red&quot;,&quot;blue&quot;,&quot;green&quot;,&quot;orange&quot;,&quot;black&quot;)</code></pre>
+<pre class="r"><code>df.stdt &lt;- data.frame(norm=d_norm, t(mapply(dt, x_e, MoreArgs = list(c(4,8,12,30))))) %&gt;% 
+  set_colnames( c(&quot;norm&quot;,&quot;dgf.4&quot;,&quot;dgf.8&quot;,&quot;dgf.12&quot;,&quot;dgf.30&quot;))
+
+df.stdt %&gt;% as_tibble() %&gt;% gather(key=&quot;degrees&quot;,value = &quot;value&quot;, factor_key = TRUE) %&gt;% 
+  ggplot(aes(x=rep.int(x_e, length(cset)), y=value)) +
+  geom_line(aes(color = degrees, linetype=degrees), stat = &quot;identity&quot;, size=1.1 ) +
+  scale_y_continuous(expand = c(0.01, 0)) + 
+  labs(title = &quot;Student&#39;s T: Probability Density&quot;, x=&quot;x (in SDs)&quot;, y=&quot;Probability Density&quot;) + 
+  theme_bw(16, &quot;serif&quot;) + theme(plot.title = element_text(size = rel(1.2), vjust = 1.5)) + 
+  scale_colour_manual(values=cset)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-29-plotting-distributions_files/figure-html/unnamed-chunk-3-1.png" width="960" /></p>
+<pre class="r"><code>#Student&#39;s T: Cumulative Distribution
+df.pt &lt;- data.frame(p_norm, t(mapply(pt, x_e, MoreArgs = list(c(4,8,12,30), lower.tail = TRUE)))) %&gt;% 
+  set_colnames( c(&quot;norm&quot;,&quot;dgf.4&quot;,&quot;dgf.8&quot;,&quot;dgf.12&quot;,&quot;dgf.30&quot;))
+
+df.pt %&gt;% as_tibble() %&gt;% gather(key=&quot;degrees&quot;,value = &quot;value&quot;, factor_key = TRUE) %&gt;%  
+  ggplot(aes(x=rep.int(x_e, length(cset)), y=value)) +
+  geom_line(aes(y=value, color = degrees, linetype=degrees), stat = &quot;identity&quot;, size=1.1 ) +
+  scale_y_continuous(expand = c(0.01, 0)) + 
+  labs(title = &quot;Student&#39;s T: Cumulative Distribution&quot;, x=&quot;x (in SDs)&quot;, y=&quot;Probability&quot;) + 
+  theme_bw(16, &quot;serif&quot;) + theme(plot.title = element_text(size = rel(1.2), vjust = 1.5)) + 
+  scale_colour_manual(values=cset)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-29-plotting-distributions_files/figure-html/unnamed-chunk-4-1.png" width="960" /></p>
+<pre class="r"><code># Student&#39;s T: Inverse CDF
+quantiles &lt;- seq(0.0033, 0.9967, length.out = 100)
+df.qt &lt;- data.frame(q_norm, t(mapply(qt, quantiles, MoreArgs = list(c(4,8,12,30))))) %&gt;% 
+  set_colnames( c(&quot;norm&quot;,&quot;dgf.4&quot;,&quot;dgf.8&quot;,&quot;dgf.12&quot;,&quot;dgf.30&quot;))
+
+df.qt %&gt;% as_tibble() %&gt;% gather(key=&quot;degrees&quot;,value = &quot;value&quot;, factor_key = TRUE) %&gt;% 
+  ggplot(aes(x=rep.int(quantiles, length(cset)), y=value)) +
+  geom_line(aes(y=value, color = degrees, linetype=degrees), stat = &quot;identity&quot;, size=1.1 ) +
+  scale_y_continuous(expand = c(0.01, 0)) + 
+  labs(title = &quot;Student&#39;s T: Inverse CDF&quot;, x=&quot;Probability&quot;, y=&quot;Quantile&quot;) + 
+  theme_bw(16, &quot;serif&quot;) + theme(plot.title = element_text(size = rel(1.2), vjust = 1.5)) + 
+  scale_colour_manual(values=cset)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-29-plotting-distributions_files/figure-html/unnamed-chunk-5-1.png" width="960" /></p>
+<p>We can see as we raise the degrees of freedom, each graph increasingly begins to look like the normal distribution graphs above. Degrees of freedom can be thought of as the minimum number of independent coordinates that can determine the position of entire system.</p>
+</div>
+</div>
+<div id="conclusions" class="section level2">
+<h2>Conclusions</h2>
+<p>This notebook demonstrates the calculation and plotting of three fundamental statistical functions:</p>
+<ul>
+<li>Probability Density Function</li>
+<li>Cumulative Distribution Function</li>
+<li>Quantile Function/Inverse Cumulative Distribution Function</li>
+</ul>
+<p>for a normal distribution and Student’s T distributions with varying degrees of freedom</p>
+<div id="future-work" class="section level4">
+<h4>Future work</h4>
+<p>Other works could involve using an actual dataset rather than a contrived one to look for interesting real-world insights, exploring additional distributions such as Weibull, Gamma, Beta, or Chi-Square, and applying other statistical functions like the survival and momentum generating functions.</p>
+</div>
+<div id="references" class="section level4">
+<h4>References:</h4>
+<p>Definitions:</p>
+<ol style="list-style-type: decimal">
+<li><a href="https://en.oxforddictionaries.com/definition/probability_density_function" class="uri">https://en.oxforddictionaries.com/definition/probability_density_function</a></li>
+<li><a href="https://en.oxforddictionaries.com/definition/us/cumulative_distribution_function" class="uri">https://en.oxforddictionaries.com/definition/us/cumulative_distribution_function</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Quantile_function" class="uri">https://en.wikipedia.org/wiki/Quantile_function</a></li>
+<li><a href="https://support.minitab.com/en-us/minitab-express/1/help-and-how-to/basic-statistics/probability-distributions/supporting-topics/basics/using-the-inverse-cumulative-distribution-function-icdf/" class="uri">https://support.minitab.com/en-us/minitab-express/1/help-and-how-to/basic-statistics/probability-distributions/supporting-topics/basics/using-the-inverse-cumulative-distribution-function-icdf/</a></li>
+</ol>
+<p>Docs and Code Snippets:</p>
+<ol style="list-style-type: decimal">
+<li><a href="http://seankross.com/notes/dpqr/" class="uri">http://seankross.com/notes/dpqr/</a></li>
+<li><a href="https://stat.ethz.ch/R-manual/R-devel/library/stats/html/TDist.html" class="uri">https://stat.ethz.ch/R-manual/R-devel/library/stats/html/TDist.html</a></li>
+<li><a href="https://stackoverflow.com/questions/7162936/putting-a-repeating-value-into-a-column" class="uri">https://stackoverflow.com/questions/7162936/putting-a-repeating-value-into-a-column</a></li>
+</ol>
+<p>Other Resources:</p>
+<ol style="list-style-type: decimal">
+<li><a href="http://pages.stat.wisc.edu/~ifischer/Statistical_Tables/Z-distribution.pdf" class="uri">http://pages.stat.wisc.edu/~ifischer/Statistical_Tables/Z-distribution.pdf</a></li>
+<li><a href="https://www.intmath.com/counting-probability/14-normal-probability-distribution.php" class="uri">https://www.intmath.com/counting-probability/14-normal-probability-distribution.php</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Degrees_of_freedom_(statistics)" class="uri">https://en.wikipedia.org/wiki/Degrees_of_freedom_(statistics)</a></li>
+<li><a href="https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf" class="uri">https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf</a></li>
+</ol>
+</div>
+</div>

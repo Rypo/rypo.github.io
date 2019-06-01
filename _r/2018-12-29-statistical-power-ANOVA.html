@@ -1,0 +1,199 @@
+---
+title: "Statistical Power"
+permalink: /r/power-ttests
+excerpt: "Analyzing the classic sleep dataset using, two-sample and paired t-tests, and calculating statistical power."
+categories: [r, statistics]
+tags: [r, statistics, sleep, ttests, power]
+layout: rmd
+author: "Ryan Gust"
+date: 2018-12-29
+updated: 2018-12-29
+header:
+  teaser: assets/images/thumbs/chart-unsplash-lchesser.png
+---
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>This analysis will perform both independent two-sample t-tests and a paired-sample t-test on R’s <code>sleep</code> dataset. Each test’s confidence interval, p-value, and statistical power will be used to assess the test’s quality and whether or not we can safely reject the null hypothesis.</p>
+<div id="imports" class="section level3">
+<h3>Imports</h3>
+<pre class="r"><code>require(pwr)</code></pre>
+</div>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>The data used in this notebook is from R’s built-in <code>sleep</code> dataset. The data shows the effect of two soporific drugs (increase in hours of sleep compared to control) on 10 patients. There are 3 variable fields:</p>
+<ul>
+<li><code>extra</code> the amount of extra sleep a patient got</li>
+<li><code>group</code> which drug they were given</li>
+<li><code>ID</code> the patient ID</li>
+</ul>
+<p>Additional information can be found:<br> <a href="https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/sleep.html" class="uri">https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/sleep.html</a></p>
+<p>Relevant files:<br> <code>Gust_INET4061Lab3_R.Rmd</code> and <code>Gust_INET4061Lab3_R.html</code></p>
+<pre class="r"><code>sleep</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["extra"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["group"],"name":[2],"type":["fctr"],"align":["left"]},{"label":["ID"],"name":[3],"type":["fctr"],"align":["left"]}],"data":[{"1":"0.7","2":"1","3":"1"},{"1":"-1.6","2":"1","3":"2"},{"1":"-0.2","2":"1","3":"3"},{"1":"-1.2","2":"1","3":"4"},{"1":"-0.1","2":"1","3":"5"},{"1":"3.4","2":"1","3":"6"},{"1":"3.7","2":"1","3":"7"},{"1":"0.8","2":"1","3":"8"},{"1":"0.0","2":"1","3":"9"},{"1":"2.0","2":"1","3":"10"},{"1":"1.9","2":"2","3":"1"},{"1":"0.8","2":"2","3":"2"},{"1":"1.1","2":"2","3":"3"},{"1":"0.1","2":"2","3":"4"},{"1":"-0.1","2":"2","3":"5"},{"1":"4.4","2":"2","3":"6"},{"1":"5.5","2":"2","3":"7"},{"1":"1.6","2":"2","3":"8"},{"1":"4.6","2":"2","3":"9"},{"1":"3.4","2":"2","3":"10"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<pre class="r"><code>(sleep_wide &lt;- data.frame(
+  ID=1:10,
+  group1=sleep$extra[1:10],
+  group2=sleep$extra[11:20]
+))</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["ID"],"name":[1],"type":["int"],"align":["right"]},{"label":["group1"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["group2"],"name":[3],"type":["dbl"],"align":["right"]}],"data":[{"1":"1","2":"0.7","3":"1.9"},{"1":"2","2":"-1.6","3":"0.8"},{"1":"3","2":"-0.2","3":"1.1"},{"1":"4","2":"-1.2","3":"0.1"},{"1":"5","2":"-0.1","3":"-0.1"},{"1":"6","2":"3.4","3":"4.4"},{"1":"7","2":"3.7","3":"5.5"},{"1":"8","2":"0.8","3":"1.6"},{"1":"9","2":"0.0","3":"4.6"},{"1":"10","2":"2.0","3":"3.4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<pre class="r"><code># Pooled Standard Deviation 
+SDpooled = sqrt((sd(sleep_wide$group1)**2 + sd(sleep_wide$group2)**2)/2)
+
+# Effect Size (Cohen&#39;s d)
+d = (mean(sleep_wide$group1) - mean(sleep_wide$group2))/SDpooled</code></pre>
+</div>
+<div id="exploratory-data-analysis" class="section level2">
+<h2>Exploratory Data Analysis</h2>
+<p>The dataset used is one built-in with R. As provided, it shows two groups concatenated together, thus creating duplicate ID fields. Traditionally, an ID field does not contain repeated values if it can be avoided.</p>
+<p>In this instance, the IDs represent the same individual, so <code>sleep_wide</code> was created by splitting by group and reissuing the ID field. Depending on the function call, one varient may be less verbose than the other and as such, both are used.</p>
+<div id="two-sample-t-tests" class="section level3">
+<h3>Two Sample t-tests</h3>
+<pre class="r"><code># Welch t-test
+t.test(extra ~ group, sleep) # implicitly assumed: alternative=&quot;two.sided&quot;, var.equal=FALSE</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  extra by group
+## t = -1.8608, df = 17.776, p-value = 0.07939
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -3.3654832  0.2054832
+## sample estimates:
+## mean in group 1 mean in group 2 
+##            0.75            2.33</code></pre>
+<pre class="r"><code># Using the widened version produces the same result
+# t.test(sleep_wide$group1, sleep_wide$group2)</code></pre>
+<pre class="r"><code>t.test(extra ~ group, sleep, var.equal=TRUE)</code></pre>
+<pre><code>## 
+##  Two Sample t-test
+## 
+## data:  extra by group
+## t = -1.8608, df = 18, p-value = 0.07919
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -3.363874  0.203874
+## sample estimates:
+## mean in group 1 mean in group 2 
+##            0.75            2.33</code></pre>
+<pre class="r"><code>pwr.t.test(n=10, d=d, type=&quot;two.sample&quot;)</code></pre>
+<pre><code>## 
+##      Two-sample t test power calculation 
+## 
+##               n = 10
+##               d = 0.8321811
+##       sig.level = 0.05
+##           power = 0.4214399
+##     alternative = two.sided
+## 
+## NOTE: n is number in *each* group</code></pre>
+<p>In both the case of Welch’s unequal variance t-test and Student’s t-test we fail to reject the null hypothesis</p>
+<p>For both tests, the p-value was larger than our designated significance level of p=0.05. <br> Welch’s: 0.07939, Student’s: 0.07919</p>
+<p>Welch’s confidence interval: -3.3654832 0.2054832 <br> Student’s confidence interval: -3.363874 0.203874</p>
+<p>From the 95th confidence interval of these tests, we can only say we are 95% confident that the difference between means is between approximately -3.36 and 0.20. Since the interval contains 0, there is not sufficient evidence to claim a difference.</p>
+<p>The statistical power is ~0.421, with a power this low, the main conclusion to be drawn is either that our sample n=10 is too small or our testing method is flawed. Since we are making a direct comparison between two outcomes of the same individual and not using a paired t-test, the latter reasoning makes sense.</p>
+</div>
+<div id="paired-t-tests" class="section level3">
+<h3>Paired t-tests</h3>
+<pre class="r"><code># Sort by group then ID
+sleep &lt;- sleep[order(sleep$group, sleep$ID), ]
+
+# Paired t-test
+t.test(extra ~ group, sleep, paired=TRUE)</code></pre>
+<pre><code>## 
+##  Paired t-test
+## 
+## data:  extra by group
+## t = -4.0621, df = 9, p-value = 0.002833
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -2.4598858 -0.7001142
+## sample estimates:
+## mean of the differences 
+##                   -1.58</code></pre>
+<pre class="r"><code># Resulting values are equivalent to a paired t-test
+t.test(sleep_wide$group1 - sleep_wide$group2, mu=0, var.equal = TRUE)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  sleep_wide$group1 - sleep_wide$group2
+## t = -4.0621, df = 9, p-value = 0.002833
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##  -2.4598858 -0.7001142
+## sample estimates:
+## mean of x 
+##     -1.58</code></pre>
+<pre class="r"><code>pwr.t.test(n=10, d=d, type=&quot;paired&quot;, alternative=&quot;two.sided&quot;)</code></pre>
+<pre><code>## 
+##      Paired t test power calculation 
+## 
+##               n = 10
+##               d = 0.8321811
+##       sig.level = 0.05
+##           power = 0.6500366
+##     alternative = two.sided
+## 
+## NOTE: n is number of *pairs*</code></pre>
+<pre class="r"><code>pwr.t.test(n=10, d=d, type=&quot;paired&quot;, alternative=&quot;less&quot;)</code></pre>
+<pre><code>## 
+##      Paired t test power calculation 
+## 
+##               n = 10
+##               d = -0.8321811
+##       sig.level = 0.05
+##           power = 0.7828239
+##     alternative = less
+## 
+## NOTE: n is number of *pairs*</code></pre>
+<p>With a paired t-test, we would now be able to reject the null hypothesis</p>
+<p>the p-value is now 2.833e-3, well below the designated significance level of p=0.05. <br></p>
+<p>Confidence interval: -2.4598858 -0.7001142 <br></p>
+<p>From the 95th confidence interval of this, we can say we are 95% confident that the true difference between means is approximately between -2.46 and -0.70. The interval does not contain 0, so rejecting the null hypothesis is no longer illogical.</p>
+<p>The statistical power is ~0.650 with a two-sided alternative, an increase from the independent tests, but still lower than the desired 0.80. However, when the alternative is less, the statistical power increases to ~0.78, meaning if our null hypothesis was that the mean of group one is not less than the second group, we have much greater statistical power. To reliably increase power further a larger sample size may be used.</p>
+<pre class="r"><code>t.test(sleep$extra, mu=0)</code></pre>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  sleep$extra
+## t = 3.413, df = 19, p-value = 0.002918
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##  0.5955845 2.4844155
+## sample estimates:
+## mean of x 
+##      1.54</code></pre>
+<pre class="r"><code>pwr.t.test(n=10, d=d, type=&quot;one.sample&quot;)</code></pre>
+<pre><code>## 
+##      One-sample t test power calculation 
+## 
+##               n = 10
+##               d = 0.8321811
+##       sig.level = 0.05
+##           power = 0.6500366
+##     alternative = two.sided</code></pre>
+</div>
+</div>
+<div id="conclusions" class="section level2">
+<h2>Conclusions</h2>
+<p>This document conducted both independent two-sample t-tests and a paired t-test on R’s <code>sleep</code> dataset. From the analysis of p-values, confidence intervals, and power levels we were able to demonstrate how using independent tests on dependent data leads to flawed results.</p>
+<p>Furthermore, we were able to conclude with a relevantly high level of confidence that there is a statistically significant difference between group1 and group2 but to be more certain we would need a larger sample size.</p>
+<p>Future works may involve the use of a dataset with a larger sample size or expanding the analysis with ANOVA tests and their respective power tests.</p>
+<div id="references" class="section level3">
+<h3>References:</h3>
+<p><strong>Code:</strong> <br> <a href="http://www.cookbook-r.com/Statistical_analysis/t-test/" class="uri">http://www.cookbook-r.com/Statistical_analysis/t-test/</a></p>
+<p><a href="https://www.statmethods.net/stats/power.html" class="uri">https://www.statmethods.net/stats/power.html</a></p>
+<p><strong>Other:</strong> <br> <a href="https://en.wikipedia.org/wiki/Effect_size#Cohen&#39;s_d" class="uri">https://en.wikipedia.org/wiki/Effect_size#Cohen's_d</a></p>
+<p><a href="http://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/BS704_Confidence_Intervals/BS704_Confidence_Intervals5.html" class="uri">http://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/BS704_Confidence_Intervals/BS704_Confidence_Intervals5.html</a></p>
+<p><a href="https://stats.idre.ucla.edu/r/dae/power-analysis-for-paired-sample-t-test/" class="uri">https://stats.idre.ucla.edu/r/dae/power-analysis-for-paired-sample-t-test/</a></p>
+</div>
+</div>

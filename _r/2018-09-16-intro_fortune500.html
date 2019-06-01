@@ -1,6 +1,6 @@
 ---
 title: "Introduction: Fortune 500 Companies R"
-permalink: /intro-fortune-500-R
+permalink: /r/intro-fortune-500
 excerpt: "A brief introduction to data analysis with R using the fortune 500 dataset."
 categories: [r, intro]
 tags: [r, introduction, fortune500, EDA]
@@ -9,9 +9,11 @@ author: "Ryan Gust"
 created: 2018-09-16
 date: 2018-09-16
 last_modified_at: 2019-01-08
+header:
+  teaser: assets/images/thumbs/chart-unsplash-lchesser.png
 ---
+{% comment %} teaser: assets/images/thumbs/chart-unsplash-lchesser.png {% endcomment %}
 
-<div class="container-fluid main-container">
 
 {% comment %} <div class="fluid-row" id="header">
 
@@ -139,7 +141,7 @@ colnames(f500) &lt;- gsub(&#39;\\.$&#39;,&#39;&#39;,colnames(f500))</code></pre>
   labs(title=&#39;Fortune 500 Rank - 3M, Kellogg, and Pfizer (1955-2005)&#39;) +
   scale_y_continuous(breaks = seq(0, 300, by=30), limits=c(300,1), trans = &#39;reverse&#39;) +
   geom_vline(xintercept = 1994)</code></pre>
-<p><img src="/assets/images/2018-09-16-intro-fortune500-R-files/figure-html/unnamed-chunk-11-1.png" width="864" /> Clearly, in 1994 there was a large upset in these particular company’s historical trends. In absence of other information, one may guess that the proliferation of the internet may be at play in these sharp declines.</p>
+<p><img src="/assets/images/rimgs/2018-09-16-intro-fortune500_files/figure-html/unnamed-chunk-11-1.png" width="864" /> Clearly, in 1994 there was a large upset in these particular company’s historical trends. In absence of other information, one may guess that the proliferation of the internet may be at play in these sharp declines.</p>
 <pre class="r"><code>head(sprdf &lt;-f500 %&gt;% 
   filter(Year %in% 1993:1996) %&gt;% 
   select(c(Year,Company,Rank)) %&gt;% 
@@ -169,7 +171,7 @@ yoy &lt;- data.frame(cbind(Year=as.numeric(colnames(f55.99[3:46])),diff.from.pre
   labs(title=&quot;Number of differing companies compared to previous year&quot;) +
   scale_x_continuous(breaks = seq(1955,2000,5)) + 
   scale_y_continuous(breaks = seq(0,300,50))</code></pre>
-<p><img src="/assets/images/2018-09-16-intro-fortune500-R-files/figure-html/unnamed-chunk-16-1.png" width="672" /> A plot showing year over year difference verifies that 1994-1995 was indeed an anomaly. Our previous hypothesis that the sudden shift was due to the internet proliferating is almost certainly incorrect. The far more likely scenario is that there is either an error in the data collection process, or, the Fortune 500 list dramatically changed their company selection process.</p>
+<p><img src="/assets/images/rimgs/2018-09-16-intro-fortune500_files/figure-html/unnamed-chunk-16-1.png" width="672" /> A plot showing year over year difference verifies that 1994-1995 was indeed an anomaly. Our previous hypothesis that the sudden shift was due to the internet proliferating is almost certainly incorrect. The far more likely scenario is that there is either an error in the data collection process, or, the Fortune 500 list dramatically changed their company selection process.</p>
 </div>
 </div>
 <div id="conclusions" class="section level2">
@@ -186,33 +188,5 @@ yoy &lt;- data.frame(cbind(Year=as.numeric(colnames(f55.99[3:46])),diff.from.pre
 </div>
 </div>
 
-
-
-
-</div>
-
-<script>
-
-// add bootstrap table styles to pandoc tables
-function bootstrapStylePandocTables() {
-  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
-}
-$(document).ready(function () {
-  bootstrapStylePandocTables();
-});
-
-
-</script>
-
-<!-- dynamically load mathjax for compatibility with self-contained -->
-<script>
-  (function () {
-    var script = document.createElement("script");
-    script.type = "text/javascript";
-    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
-    document.getElementsByTagName("head")[0].appendChild(script);
-  })();
-</script>
-
-</body>
-</html>
+{% comment %} </body>
+</html> {% endcomment %}
