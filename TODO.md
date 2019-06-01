@@ -2,7 +2,7 @@
 - Convert python posts to collection.
 - Clean up redundant css/javascript files
 - Have main page display collections rather than posts
-- 
+- Upload and add github links to each analysis
 ### Aesthetic
 - Replace placeholder image teasers with images relevant to each analysis.
 - Make collapsable headings work in python files 

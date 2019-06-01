@@ -87,11 +87,11 @@ library(magrittr)</code></pre>
 ##  $ lstat  : num  4.98 9.14 4.03 2.94 5.33 ...
 ##  $ medv   : num  24 21.6 34.7 33.4 36.2 28.7 22.9 27.1 16.5 18.9 ...</code></pre>
 <pre class="r"><code>plot(bm)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/bmplot-1.png" width="1152" /> From a quick plot, we can see a quite a few possible linear relationship candidates: rm:zn, <a href="dis:zn" class="uri">dis:zn</a>, nox:dis, nox:age, rm:lstat, …</p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/bmplot-1.png" width="1152" /> From a quick plot, we can see a quite a few possible linear relationship candidates: rm:zn, <a href="dis:zn" class="uri">dis:zn</a>, nox:dis, nox:age, rm:lstat, …</p>
 <p>Looking exclusively at medv relationships: <br> medv:lstat, medv:rm, medv:age, medv:zn</p>
 <pre class="r"><code>par(mfrow=c(2,2))
 plot(medv~lstat + rm + age + zn, data=bm)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <pre class="r"><code>summary(lm(bm$medv ~ . ,data=bm))</code></pre>
 <pre><code>## 
 ## Call:
@@ -130,7 +130,7 @@ dis      -7.398  6.01e-13 ***
 ptratio  -7.283  1.31e-12 ***</code></pre>
 <pre class="r"><code>par(mfrow=c(1,2))
 plot(medv ~ dis + ptratio, data=bm)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Check the data for correlations with Variance Inflation Factors</p>
 <pre class="r"><code>vif(lm(medv ~ ., data=bm))</code></pre>
 <pre><code>##     crim       zn    indus     chas      nox       rm      age      dis 
@@ -339,7 +339,7 @@ print(paste(&#39;AIC:&#39;,round(AIC(lm_poly),3), &quot;BIC:&quot;,round(BIC(lm_
 <p><a href="http://r-statistics.co/Linear-Regression.html" class="uri">http://r-statistics.co/Linear-Regression.html</a></p>
 <pre class="r"><code>par(mfrow=c(2,2))
 plot(lm_poly)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/lmfin-1.png" width="1152" /></p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/lmfin-1.png" width="1152" /></p>
 </div>
 </div>
 <div id="carseats" class="section level2">
@@ -388,7 +388,7 @@ plot(lm_poly)</code></pre>
 ##  $ Urban      : Factor w/ 2 levels &quot;No&quot;,&quot;Yes&quot;: 2 2 2 2 2 1 2 2 1 1 ...
 ##  $ US         : Factor w/ 2 levels &quot;No&quot;,&quot;Yes&quot;: 2 2 2 2 1 2 1 2 1 2 ...</code></pre>
 <pre class="r"><code>plot(cs)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
 <pre class="r"><code>summary(lm(Sales ~ ., data=cs))</code></pre>
 <pre><code>## 
 ## Call:
@@ -470,7 +470,7 @@ vif(lm(Sales ~., data=scs))</code></pre>
 ## Age         1.016830  1        1.008380</code></pre>
 <p>Neither the original nor the reduced data appear to have issues with high collinearity, so no further action is required before modeling</p>
 <pre class="r"><code>plot(scs)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-20-1.png" width="960" /></p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/unnamed-chunk-20-1.png" width="960" /></p>
 <p>A quick plot shows potential for a linear relationships between Price and CompPrice/Sales</p>
 </div>
 <div id="models-1" class="section level3">
@@ -576,7 +576,7 @@ summary(lm_fin)</code></pre>
 <p>Because the model complexity increased a fair deal from these modifications, the BIC value increased and AIC only decreased slightly. Thus, it is debatable whether making these changes actually would improve the model’s predictive power.</p>
 <pre class="r"><code>par(mfrow=c(2,2))
 plot(lm_fin)</code></pre>
-<p><img src="2018-12-30-multi-linear-regression_files/figure-html/csfin-1.png" width="1152" /></p>
+<p><img src="/assets/images/rimgs/2018-12-30-multi-linear-regression_files/figure-html/csfin-1.png" width="1152" /></p>
 </div>
 </div>
 <div id="conclusions" class="section level2">
