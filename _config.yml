@@ -16,7 +16,7 @@ minimal_mistakes_skin    : "default" # "air", "aqua", "contrast", "dark", "dirt"
 
 # Site Settings
 locale                   : "en-US"
-title                    : "Gust.dev - All Things Data Science"
+title                    : "Gust.dev – All Things Data Science"
 title_separator          : "-"
 name                     : "Ryan Gust"
 description              : "An evolving collection of analyses written in Python and R with the common focus of deriving valuable insights from data with minimal hand-waving."
@@ -24,7 +24,7 @@ url                      : "https://gust.dev" # the base hostname & protocol for
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "Rypo/rypo.github.io" # GitHub username/repo-name e.g. "mmistakes/minimal-mistakes"
 teaser                   : # path of fallback teaser image, e.g. "/assets/images/500x300.png"
-logo                     : # path of logo image to display in the masthead, e.g. "/assets/images/88x88.png"
+logo                     : "/assets/images/icons/logo_88x88.png" # path of logo image to display in the masthead, e.g. "/assets/images/88x88.png"
 masthead_title           : # overrides the website title displayed in the masthead, use " " for no title
 # breadcrumbs            : false # true, false (default)
 words_per_minute         : 200
