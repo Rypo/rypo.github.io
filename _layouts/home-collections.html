@@ -7,32 +7,31 @@ author_profile: true
 
 <h3 class="archive__subtitle">{{ site.data.ui-text[site.locale].recent_posts | default: "Recent Posts" }}</h3>
 
-{% capture written_label %}'None'
-{% endcapture %}
+{% capture written_label %}'None'{% endcapture %}
 
 {% for collection in site.collections %}
     {% unless collection.output == false or collection.label == "posts" %}
-        {% capture label %}
-            {{ collection.label }}
-        {% endcapture %}
+        {% capture label %} {{ collection.label }} {% endcapture %}
+        
         {% if label != written_label %}
             <h2 id="{{ label | slugify }}" class="archive__subtitle">{{ label }}</h2>
-            {% capture written_label %}
-                {{ label }}
-            {% endcapture %}
+            {% capture written_label %} {{ label }} {% endcapture %}
         {% endif %}
     {% endunless %}
-    {% for post in collection.docs %}
+    {% comment %} must be called "post" for archive-single.html to work properly {% endcomment %}
+    {% for post in collection.docs %} 
         {% unless collection.output == false or collection.label == "posts" %}
             {% include archive-single.html %}
-            {% include tag-list.html page= post.tags %}
+            {% include tags-list-custom.html cdoc=post %} 
         {% endunless %}
     {% endfor %}
+
 {% endfor %}
 
 {% comment %}
-https://github.com/mmistakes/minimal-mistakes/blob/master/docs/_pages/collection-archive.html
 
+https://github.com/mmistakes/minimal-mistakes/blob/master/docs/_pages/collection-archive.html
+https://jekyllrb.com/docs/includes/
 <div class="entries-{{ page.entries_layout }}">
   {% include documents-collection.html collection=page.collection sort_by=page.sort_by sort_order=page.sort_order type=page.entries_layout %}
 </div>

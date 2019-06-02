@@ -43,9 +43,11 @@
 ```bash
 mogrify -format png -path thumbs -thumbnail 600x400 python-unsplash.jpg
 ```
-Represent keypress
-<kbd>keyboard text</kbd>
-TODO: Example todo
-FIXME: Example fixme
-OPTIMIZE: Example fixme
-STOPSHIP: Example stopship
+## Learned
+- Represent keypress : <kbd>keyboard text</kbd>
+- `post`/`page` can be overridden in for-loops to embed includes in interesting ways  
+
+TODO: General catch all for any improvements.
+FIXME: Broken but not severe enough to prevent functionality.
+OPTIMIZE: Works but could be performed more efficiently.
+STOPSHIP: Critical importance, do not push site live until fixed.
