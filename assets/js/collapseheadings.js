@@ -1,7 +1,9 @@
 (requirejs.specified('base/js/namespace') ? define : function (deps, callback) {
-	// if here, the Jupyter namespace hasn't been specified to be loaded.
+	/* TODO: Convert // comments to /*
+	if here, the Jupyter namespace hasn't been specified to be loaded.
 	// This means that we're probably embedded in a page, so we need to make
 	// our definition with a specific module name
+	*/
 	"use strict";
 	return define('nbextensions/collapsible_headings/main', deps, callback);
 })(['jquery', 'require'], function ($, requirejs) {
@@ -47,7 +49,7 @@
 		indent_px: 8,
 	};
 
-	// ------------------------------------------------------------------------
+	/* ------------------------------------------------------------------------
 	// Jupyter is used when we're in a live notebook, but in non-live notebook
 	// settings, it remains undefined.
 	// It is declared here to allow us to keep logic for live/nonlive functions
@@ -55,6 +57,7 @@
 	var Jupyter;
 	// similarly, in a live notebook, events is the Jupyter global events
 	// object, but in a non-live notebook, we must construct our own version
+	*/
 	var events;
 	try {
 		events = requirejs('base/js/events');

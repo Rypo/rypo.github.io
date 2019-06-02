@@ -112,9 +112,9 @@ author:
   location         : "Minneapolis, MN"
   email            : "ryan@gust.dev"
   links:
-    - label: "Email"
-      icon: "fas fa-fw fa-envelope-square"
-      url: mailto:ryan@gust.dev
+    # - label: "Email"
+    #   icon: "fas fa-fw fa-envelope-square"
+    #   url: mailto:ryan@gust.dev
     - label: "Website"
       icon: "fas fa-fw fa-link"
       url: "https://gust.dev"
@@ -191,7 +191,8 @@ exclude:
   - README
   - tmp
   - /docs 
-  - /test 
+  - /test
+  - TODO.md
 keep_files:
   - .git
   - .svn
@@ -269,6 +270,8 @@ tag_archive:
   type: liquid
   path: /tags/
 # https://github.com/jekyll/jekyll-archives
+# Cannot enable with github-pages
+# Ref: https://mmistakes.github.io/minimal-mistakes/docs/configuration/#plugins
 # jekyll-archives:
 #   enabled:
 #     - categories
@@ -294,6 +297,12 @@ collections:
   # polyglot:
   #   output: true
   #   permalink: /:collection/:path/
+
+# categories:
+#   r:
+#     output: true
+#   python:
+#     output: true
 
 # HTML Compression
 # - http://jch.penibelst.de/

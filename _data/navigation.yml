@@ -1,9 +1,9 @@
 # main links
 main:
   - title: "Python Analyses"
-    url: /analyses
+    url: /python/
   - title: "R Analyses"
-    url: /r
+    url: /r/
   - title: "About Me"
     url: /about
 #  - title: "Sample Posts"

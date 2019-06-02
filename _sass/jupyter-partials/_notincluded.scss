@@ -1,3 +1,11 @@
+// To hide cell numbering include this css snippet
+// i.e. In [1] and Out [1] will no longer display
+div.output_prompt, div.input_prompt {
+    visibility: hidden;
+}
+
+
+
 // // For jupyter notebook style tables
 // p, blockquote, ul, ol, dl, li, table, pre {
 //     margin: 15px 0; }
