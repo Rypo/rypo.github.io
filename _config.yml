@@ -164,6 +164,8 @@ footer:
 include:
   - .htaccess
   - _pages
+#  - _r
+#  - _python
 #  - _nbout
 exclude:
   - "*.sublime-project"
@@ -298,11 +300,7 @@ collections:
   #   output: true
   #   permalink: /:collection/:path/
 
-# categories:
-#   r:
-#     output: true
-#   python:
-#     output: true
+
 
 # HTML Compression
 # - http://jch.penibelst.de/
@@ -344,15 +342,19 @@ defaults:
     values:
       layout: rmd
       author_profile: false
+      read_time: true
       share: true
+      related: true
   # _python
   - scope:
       path: ""
       type: python
     values:
-      layout: jnb
+      layout: single-jnb
       author_profile: false
+      read_time: true
       share: true
+      related: true
 
 head_scripts:
 #  - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js

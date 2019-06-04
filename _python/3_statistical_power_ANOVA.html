@@ -7,7 +7,7 @@ tags: [python, statistics, ANOVA, ttests, voting]
 layout: single-jnb
 author: "Ryan Gust"
 date: 2018-09-30
-updated: 2019-01-10
+last_modified_at: 2019-01-10
 header:
   teaser: assets/images/teasers/thumbs/ttests.png
 ---
@@ -16,12 +16,27 @@ Image: Carnegie Mellon.
 https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/t-test/
 -->
 
+
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2><p>This notebook will analyze a fabricated dataset representing race and age of voters.</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This notebook will analyze a fabricated dataset representing race and age of voters.</p>
 <p>Tests used will include one-way ANOVA test, paired t-test, and Tukey's Range Test, starting with a baseline comparison before altering the data and moving on to the post hoc analyses.</p>
 
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Imports">Imports<a class="anchor-link" href="#Imports">&#182;</a></h4>
 </div>
 </div>
 </div>
@@ -46,7 +61,14 @@ https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/t-
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Data">Data<a class="anchor-link" href="#Data">&#182;</a></h2><p>The data used in this notebook is randomly generated, following the procedures outlined in <a href="http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html">this blog post</a> with minor alterations for segmentation purposes.</p>
+<h2 id="Data">Data<a class="anchor-link" href="#Data">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The data used in this notebook is randomly generated, following the procedures outlined in <a href="http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html">this blog post</a> with minor alterations for segmentation purposes.</p>
 
 </div>
 </div>
@@ -99,7 +121,14 @@ https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/t-
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">&#182;</a></h2><p>The data used in this notebook attempts to mock a racial distribution of a voter population sample. As it is artificially generated, no preprocessing is required.</p>
+<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The data used in this notebook attempts to mock a racial distribution of a voter population sample. As it is artificially generated, no preprocessing is required.</p>
 
 </div>
 </div>
@@ -465,7 +494,14 @@ A <strong>Bonferroni correction</strong> addresses the <a href="https://en.wikip
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">&#182;</a></h2><p>This note demonstrated the use of:</p>
+<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This note demonstrated the use of:</p>
 <ul>
 <li>one-way ANOVA test </li>
 <li>pairwise t-tests </li>
@@ -480,30 +516,20 @@ A <strong>Bonferroni correction</strong> addresses the <a href="https://en.wikip
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="References">References<a class="anchor-link" href="#References">&#182;</a></h3><h4 id="Text:">Text:<a class="anchor-link" href="#Text:">&#182;</a></h4><p><a href="http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html">http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html</a></p>
-<p>Definitions:</p>
-<p><a href="http://statisticsbyjim.com/anova/f-tests-anova/">http://statisticsbyjim.com/anova/f-tests-anova/</a></p>
-<p><a href="https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/f-statistic-value-test/#FandP">https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/f-statistic-value-test/#FandP</a></p>
-<p><a href="http://blog.minitab.com/blog/adventures-in-statistics-2/understanding-analysis-of-variance-anova-and-the-f-test">http://blog.minitab.com/blog/adventures-in-statistics-2/understanding-analysis-of-variance-anova-and-the-f-test</a></p>
-<p><a href="https://en.wikipedia.org/wiki/One-way_analysis_of_variance">https://en.wikipedia.org/wiki/One-way_analysis_of_variance</a></p>
-<p><a href="https://en.wikipedia.org/wiki/F-test">https://en.wikipedia.org/wiki/F-test</a></p>
-<h4 id="Code:">Code:<a class="anchor-link" href="#Code:">&#182;</a></h4><p><a href="http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html">http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html</a></p>
+<h3 id="References">References<a class="anchor-link" href="#References">&#182;</a></h3><h4 id="Text:">Text:<a class="anchor-link" href="#Text:">&#182;</a></h4><ol>
+<li><a href="http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html">http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html</a></li>
+<li><a href="http://statisticsbyjim.com/anova/f-tests-anova/">http://statisticsbyjim.com/anova/f-tests-anova/</a> </li>
+<li><a href="https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/f-statistic-value-test/#FandP">https://www.statisticshowto.datasciencecentral.com/probability-and-statistics/f-statistic-value-test/#FandP</a></li>
+<li><a href="http://blog.minitab.com/blog/adventures-in-statistics-2/understanding-analysis-of-variance-anova-and-the-f-test">http://blog.minitab.com/blog/adventures-in-statistics-2/understanding-analysis-of-variance-anova-and-the-f-test</a></li>
+<li><a href="https://en.wikipedia.org/wiki/One-way_analysis_of_variance">https://en.wikipedia.org/wiki/One-way_analysis_of_variance</a></li>
+<li><a href="https://en.wikipedia.org/wiki/F-test">https://en.wikipedia.org/wiki/F-test</a></li>
+</ol>
+<h4 id="Code:">Code:<a class="anchor-link" href="#Code:">&#182;</a></h4><ol>
+<li><a href="http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html">http://hamelg.blogspot.com/2015/11/python-for-data-analysis-part-16_23.html</a></li>
+</ol>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
 </div>
  
 

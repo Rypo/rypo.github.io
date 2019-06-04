@@ -4,14 +4,24 @@ permalink: /tags/
 layout: tags
 author_profile: true
 ---
+{%- comment -%} 
+<!-- {% include collecttags.html %} --> 
 
-{% include tag-list.html %}
+<!-- {% for doc in site.documents %} {{ doc.tags }} {% endfor %} -->
 
-{% for tag in site.tags %}
-  <h3>{{ tag[0] }}</h3>
-  <ul>
-    {% for post in tag[1] %}
-      <li><a href="{{ post.url }}">{{ post.title }}</a></li>
-    {% endfor %}
-  </ul>
+<!-- {% for post in site.posts %}
+    A post: {{ post }}
 {% endfor %}
+{% for coll in site.collections  %} | where_exp: "item", "item.label" != "posts"
+    {% if coll.label != 'posts' %}
+        {% include documents-collection.html collection=coll.label %} 
+    {% endif %}
+{% endfor %}  -->
+
+
+<!-- {% for collection in site.collections %}
+    {% for page in collection.docs %}
+        {% include tag-list.html %}
+    {% endfor %}
+{% endfor %}  -->
+{%- endcomment -%}

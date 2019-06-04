@@ -4,8 +4,11 @@ layout: categories
 permalink: /categories/
 author_profile: true
 ---
-
-{% include category-list.html %}
+{%- comment -%} 
+<!-- {% include category-list.html %}
+{% for category in site.categories %}
+    <h3>{{ category }}</h3>
+{% endfor %}
 
 {% for category in site.categories %}
     <h3>{{ category[0] }}</h3>
@@ -16,4 +19,5 @@ author_profile: true
             </li>
         {% endfor %}
     </ul>
-{% endfor %}
+{% endfor %} 
+{% endcomment %}

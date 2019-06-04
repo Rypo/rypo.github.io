@@ -7,7 +7,7 @@ tags: [python, unbalanced, SMOTE, undersampling,oversampling, RandomForest, Bagg
 layout: single-jnb
 author: "Ryan Gust"
 date: 2018-10-14
-updated: 2019-01-20
+last_modified_at: 2019-01-20
 header:
   teaser: assets/images/teasers/thumbs/imbdata.png
 ---
@@ -18,7 +18,14 @@ https://www.datascience.com/blog/imbalanced-data
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2><p>This notebook will look at the 2016 Kaggle Caravan Insurance Challenge. The data was collected to see with the following goal in mind:</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This notebook will look at the 2016 Kaggle Caravan Insurance Challenge. The data was collected to see with the following goal in mind:</p>
 <blockquote><p>Can you predict who would be interested in buying a caravan insurance policy and give an explanation why?</p>
 </blockquote>
 <p>Several models will be used in attempting to answer this question:</p>
@@ -77,9 +84,16 @@ https://www.datascience.com/blog/imbalanced-data
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Data">Data<a class="anchor-link" href="#Data">&#182;</a></h2><p>The dataset used is from the CoIL Challenge 2000 datamining competition. It may be obtained from: <a href="https://www.kaggle.com/uciml/caravan-insurance-challenge">https://www.kaggle.com/uciml/caravan-insurance-challenge</a></p>
+<h2 id="Data">Data<a class="anchor-link" href="#Data">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The dataset used is from the CoIL Challenge 2000 datamining competition. It may be obtained from: <a href="https://www.kaggle.com/uciml/caravan-insurance-challenge">https://www.kaggle.com/uciml/caravan-insurance-challenge</a></p>
 <p>It contains information on customers of an insurance company. The data consists of 86 variables and includes product usage data and socio-demographic data derived from zip area codes.</p>
-<p>A description of each variable may be found in <code>data_dfns.md</code> or at the <a href="https://www.kaggle.com/uciml/caravan-insurance-challenge">link listed above</a>.</p>
+<p>A description of each variable may be found at the <a href="https://www.kaggle.com/uciml/caravan-insurance-challenge">link listed above</a>.</p>
 <p>Each number corresponds with a certain key, specific to each variable. There are 5 levels of keys, L0-L4 each key represents a different group range. As a sample:</p>
 
 <pre><code>L0 - Customer subtype (1-41)
@@ -121,21 +135,6 @@ L4 - total number keys (0-9):
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## Uncomment these lines to view the entire data set description ##</span>
-<span class="c1">#from IPython.core.display import Markdown</span>
-<span class="c1">#Markdown(open(&quot;data/data_dfns.md&quot;).read())</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
@@ -381,7 +380,14 @@ Name: ORIGIN, dtype: int64</pre>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">&#182;</a></h2><p>No NA values, all variables are type of int64. The data is peculiar in that every numeric value stands for an attribute of a person. Even variables that could be continuous, such as income, have been binned. In this sense, this dataset is entirely comprised of Categorical and Ordinal values. Other than potential collinearity between percentage and range values, the data is mostly clean.</p>
+<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>No NA values, all variables are type of int64. The data is peculiar in that every numeric value stands for an attribute of a person. Even variables that could be continuous, such as income, have been binned. In this sense, this dataset is entirely comprised of Categorical and Ordinal values. Other than potential collinearity between percentage and range values, the data is mostly clean.</p>
 <p>For the EDA portion, we will cheat a bit and use knowledge from the combined dataset to get a better picture of the data. During the actual competition, contestants would not have had access to the <code>CARAVAN</code> variable where <code>ORIGIN</code> = <code>test</code></p>
 
 </div>
@@ -693,8 +699,22 @@ Name: CARAVAN, dtype: int64</pre>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Models">Models<a class="anchor-link" href="#Models">&#182;</a></h2><p>4 Models will be used in total: <code>BaggingClassifier</code>, <code>RandomForestClassifier</code>, <code>AdaBoostClassifier</code> from sklearn and Microsoft's <code>lightgbm</code></p>
+<h2 id="Models">Models<a class="anchor-link" href="#Models">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>4 Models will be used in total: <code>BaggingClassifier</code>, <code>RandomForestClassifier</code>, <code>AdaBoostClassifier</code> from sklearn and Microsoft's <code>lightgbm</code></p>
 
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h4 id="Helper-functions">Helper functions<a class="anchor-link" href="#Helper-functions">&#182;</a></h4>
 </div>
 </div>
 </div>
@@ -1362,50 +1382,6 @@ LGBMClassifier                0.52446
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[77]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">set</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="ow">not</span> <span class="n">x</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">),</span> <span class="nb">set</span><span class="p">(</span><span class="n">bc_unbal</span><span class="o">.</span><span class="fm">__dir__</span><span class="p">())</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="fm">__dir__</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">unbal_models</span><span class="p">])))</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-    <div class="prompt output_prompt">Out[77]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>{&#39;_estimator_type&#39;,
- &#39;_get_param_names&#39;,
- &#39;classes_&#39;,
- &#39;fit&#39;,
- &#39;get_params&#39;,
- &#39;n_classes_&#39;,
- &#39;n_estimators&#39;,
- &#39;predict&#39;,
- &#39;predict_proba&#39;,
- &#39;random_state&#39;,
- &#39;score&#39;,
- &#39;set_params&#39;}</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -1479,19 +1455,6 @@ weighted avg       0.93      0.70      0.78      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -1554,19 +1517,6 @@ weighted avg       0.93      0.70      0.78      1165
 
 </div>
 
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
 </div>
 </div>
 
@@ -1672,19 +1622,6 @@ weighted avg       0.92      0.71      0.78      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -1786,19 +1723,6 @@ weighted avg       0.92      0.67      0.76      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -1872,19 +1796,6 @@ weighted avg       0.90      0.92      0.91      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -1947,19 +1858,6 @@ weighted avg       0.90      0.92      0.91      1165
 
 </div>
 
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
 </div>
 </div>
 
@@ -2065,19 +1963,6 @@ weighted avg       0.90      0.92      0.91      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -2179,19 +2064,6 @@ weighted avg       0.91      0.84      0.87      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -2265,19 +2137,6 @@ weighted avg       0.90      0.92      0.91      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -2340,19 +2199,6 @@ weighted avg       0.90      0.89      0.89      1165
 
 </div>
 
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
 </div>
 </div>
 
@@ -2458,19 +2304,6 @@ weighted avg       0.89      0.92      0.90      1165
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
@@ -2568,19 +2401,6 @@ weighted avg       0.90      0.93      0.91      1165
 
 </div>
 
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
 </div>
 </div>
 
@@ -3350,34 +3170,26 @@ Unaltered, Undersampled, Oversampled, and SMOTE.</p>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="References">References<a class="anchor-link" href="#References">&#182;</a></h3><h4 id="Code-&amp;-Docs:">Code &amp; Docs:<a class="anchor-link" href="#Code-&amp;-Docs:">&#182;</a></h4><p><a href="https://mlcourse.ai/notebooks/blob/master/jupyter_english/topic06_features/topic6_feature_engineering_feature_selection.ipynb">https://mlcourse.ai/notebooks/blob/master/jupyter_english/topic06_features/topic6_feature_engineering_feature_selection.ipynb</a></p>
-<p><a href="https://medium.com/@rnbrown/creating-and-visualizing-decision-trees-with-python-f8e8fa394176">https://medium.com/@rnbrown/creating-and-visualizing-decision-trees-with-python-f8e8fa394176</a></p>
-<p><a href="https://imbalanced-learn.readthedocs.io/en/stable/api.html">https://imbalanced-learn.readthedocs.io/en/stable/api.html</a></p>
-<p><a href="http://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble">http://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble</a></p>
-<h4 id="Text:">Text:<a class="anchor-link" href="#Text:">&#182;</a></h4><p><a href="https://www.kaggle.com/uciml/caravan-insurance-challenge/home">https://www.kaggle.com/uciml/caravan-insurance-challenge/home</a></p>
-<p>Definitions:</p>
-<p><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.RandomOverSampler.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.RandomOverSampler.html</a></p>
-<p><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html</a></p>
-<p><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.SMOTE.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.SMOTE.html</a></p>
-<h4 id="Other:">Other:<a class="anchor-link" href="#Other:">&#182;</a></h4><p><a href="https://web.archive.org/web/20160818233319/http://www.wi.leidenuniv.nl/~putten/library/cc2000/">https://web.archive.org/web/20160818233319/http://www.wi.leidenuniv.nl/~putten/library/cc2000/</a></p>
-<p><a href="https://github.com/jayanttikmani/cross-sellingCaravanInsuranceUsingDataMining/">https://github.com/jayanttikmani/cross-sellingCaravanInsuranceUsingDataMining/</a></p>
-<p><a href="http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html</a></p>
+<h3 id="References">References<a class="anchor-link" href="#References">&#182;</a></h3><h4 id="Code-&amp;-Docs:">Code &amp; Docs:<a class="anchor-link" href="#Code-&amp;-Docs:">&#182;</a></h4><ol>
+<li><a href="https://mlcourse.ai/notebooks/blob/master/jupyter_english/topic06_features/topic6_feature_engineering_feature_selection.ipynb">https://mlcourse.ai/notebooks/blob/master/jupyter_english/topic06_features/topic6_feature_engineering_feature_selection.ipynb</a></li>
+<li><a href="https://medium.com/@rnbrown/creating-and-visualizing-decision-trees-with-python-f8e8fa394176">https://medium.com/@rnbrown/creating-and-visualizing-decision-trees-with-python-f8e8fa394176</a></li>
+<li><a href="https://imbalanced-learn.readthedocs.io/en/stable/api.html">https://imbalanced-learn.readthedocs.io/en/stable/api.html</a></li>
+<li><a href="http://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble">http://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble</a></li>
+</ol>
+<h4 id="Text:">Text:<a class="anchor-link" href="#Text:">&#182;</a></h4><ol>
+<li><a href="https://www.kaggle.com/uciml/caravan-insurance-challenge/home">https://www.kaggle.com/uciml/caravan-insurance-challenge/home</a></li>
+<li><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.RandomOverSampler.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.RandomOverSampler.html</a></li>
+<li><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html</a></li>
+<li><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.SMOTE.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.SMOTE.html</a></li>
+</ol>
+<h4 id="Other:">Other:<a class="anchor-link" href="#Other:">&#182;</a></h4><ol>
+<li><a href="https://web.archive.org/web/20160818233319/http://www.wi.leidenuniv.nl/~putten/library/cc2000/">https://web.archive.org/web/20160818233319/http://www.wi.leidenuniv.nl/~putten/library/cc2000/</a></li>
+<li><a href="https://github.com/jayanttikmani/cross-sellingCaravanInsuranceUsingDataMining/">https://github.com/jayanttikmani/cross-sellingCaravanInsuranceUsingDataMining/</a></li>
+<li><a href="http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html</a></li>
+</ol>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
 </div>
  
 

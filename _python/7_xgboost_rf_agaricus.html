@@ -7,7 +7,7 @@ tags: [python, agaricus, synthetic, RandomForest, XGBoost]
 layout: single-jnb
 author: "Ryan Gust"
 date: 2018-11-02
-updated: 2019-01-25
+last_modified_at: 2019-01-25
 header:
   teaser: assets/images/teasers/thumbs/agaricus.png
 ---
@@ -33,16 +33,6 @@ CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1710232
 <li>XGBoost's XGBClassifier</li>
 </ul>
 <p>Each model will be used on both a simple numeric mapping and a one-hot encoding of the dataset. In addition to model performance, feature importances will be examined for each model and decision trees built when possible.</p>
-<h3 id="References">References<a class="anchor-link" href="#References">&#182;</a></h3><p><strong>Code:</strong><br>
-<a href="https://gist.github.com/hitvoice/36cf44689065ca9b927431546381a3f7">https://gist.github.com/hitvoice/36cf44689065ca9b927431546381a3f7</a></p>
-<p><a href="https://xgboost.readthedocs.io/en/latest/get_started.html">https://xgboost.readthedocs.io/en/latest/get_started.html</a></p>
-<p><strong>Text:</strong> <br>
-<a href="https://archive.ics.uci.edu/ml/datasets/mushroom">https://archive.ics.uci.edu/ml/datasets/mushroom</a></p>
-<p><a href="https://www.kaggle.com/uciml/mushroom-classification/home">https://www.kaggle.com/uciml/mushroom-classification/home</a></p>
-<p><strong>Other:</strong><br>
-<a href="http://pbpython.com/categorical-encoding.html">http://pbpython.com/categorical-encoding.html</a></p>
-<p><a href="http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html">http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html</a></p>
-<p><a href="https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.DMatrix">https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.DMatrix</a></p>
 
 </div>
 </div>
@@ -98,8 +88,6 @@ CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1710232
 <p>The Kaggle link is preferred simply for convenience as the columns have already been labeled with sensible names.</p>
 <p>This dataset includes descriptions of hypothetical samples corresponding to 23 species of gilled mushrooms in the Agaricus and Lepiota Family Mushroom drawn from The Audubon Society Field Guide to North American Mushrooms (1981). Each species is identified as definitely edible, definitely poisonous, or of unknown edibility and not recommended. This latter class was combined with the poisonous one.</p>
 <p>Each entry in dataset contains only a single letter, a reference table containing corresponding meanings can be found in <code>data/agaricus-lepiota.names</code> or at <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.names">https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.names</a></p>
-<p>Relevant files:
-<code>data</code> - houses all forms of the dataset and related descriptions and <code>Gust_INET4061Lab7.ipynb</code></p>
 
 </div>
 </div>
@@ -1680,18 +1668,25 @@ Simplifications to the model are certainly possible, feature reduction could pro
 </div>
 </div>
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="References">References<a class="anchor-link" href="#References">&#182;</a></h3><h4 id="Code:">Code:<a class="anchor-link" href="#Code:">&#182;</a></h4><ol>
+<li><a href="https://gist.github.com/hitvoice/36cf44689065ca9b927431546381a3f7">https://gist.github.com/hitvoice/36cf44689065ca9b927431546381a3f7</a></li>
+<li><a href="https://xgboost.readthedocs.io/en/latest/get_started.html">https://xgboost.readthedocs.io/en/latest/get_started.html</a></li>
+</ol>
+<h4 id="Text:">Text:<a class="anchor-link" href="#Text:">&#182;</a></h4><ol>
+<li><a href="https://archive.ics.uci.edu/ml/datasets/mushroom">https://archive.ics.uci.edu/ml/datasets/mushroom</a></li>
+<li><a href="https://www.kaggle.com/uciml/mushroom-classification/home">https://www.kaggle.com/uciml/mushroom-classification/home</a></li>
+</ol>
+<h4 id="Other:">Other:<a class="anchor-link" href="#Other:">&#182;</a></h4><ol>
+<li><a href="http://pbpython.com/categorical-encoding.html">http://pbpython.com/categorical-encoding.html</a></li>
+<li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html">http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html</a></li>
+<li><a href="https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.DMatrix">https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.DMatrix</a></li>
+</ol>
 
-    </div>
 </div>
 </div>
-
 </div>
  
 

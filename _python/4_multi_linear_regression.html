@@ -7,7 +7,7 @@ tags: [python, linear, regression, airfare]
 layout: single-jnb
 author: "Ryan Gust"
 date: 2018-10-07
-updated: 2019-01-10
+last_modified_at: 2019-01-10
 header:
   teaser: assets/images/teasers/thumbs/multiplelr.png
 ---
@@ -15,10 +15,18 @@ header:
 https://www.guru99.com/r-simple-multiple-linear-regression.html
 -->
 
+
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2><p>This document will demonstrate multiple approaches toward producing linear models in python using the US DoT airfare dataset.</p>
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This document will demonstrate multiple approaches toward producing linear models in python using the US DoT airfare dataset.</p>
 <p>Two Basic Linear Regression Models will are used:</p>
 <ul>
 <li><p>Numpy's <code>polyfit</code></p>
@@ -41,7 +49,7 @@ https://www.guru99.com/r-simple-multiple-linear-regression.html
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Imports">Imports<a class="anchor-link" href="#Imports">&#182;</a></h3>
+<h4 id="Imports">Imports<a class="anchor-link" href="#Imports">&#182;</a></h4>
 </div>
 </div>
 </div>
@@ -70,7 +78,14 @@ https://www.guru99.com/r-simple-multiple-linear-regression.html
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Data">Data<a class="anchor-link" href="#Data">&#182;</a></h2><p>Dataset:   airq402.dat</p>
+<h2 id="Data">Data<a class="anchor-link" href="#Data">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Dataset:   airq402.dat</p>
 <p>Source: U.S. Department of Transportation</p>
 <p>Description: Airfares and passengers for U.S. Domestic Routes
 for 4th Quarter of 2002.</p>
@@ -322,7 +337,14 @@ Saving to: &#39;airq402.dat.1&#39;
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">&#182;</a></h2><p>The dataset has no missing values and 4 columns with object values, these could be treated as categorical, but they do have a high cardinality. Other than the handling of the object values, there is no preprocessing required, the data is clean enough for immediate analysis.</p>
+<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The dataset has no missing values and 4 columns with object values, these could be treated as categorical, but they do have a high cardinality. Other than the handling of the object values, there is no preprocessing required, the data is clean enough for immediate analysis.</p>
 
 </div>
 </div>
@@ -684,7 +706,14 @@ dtype: object</pre>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Models">Models<a class="anchor-link" href="#Models">&#182;</a></h2><p>2 Simple linear regression models are made with <code>numpy</code> and <code>scipy.stats</code> followed by 2 Multiple linear regressions models in <code>sklearn</code> and <code>StatModels</code>.</p>
+<h2 id="Models">Models<a class="anchor-link" href="#Models">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>2 Simple linear regression models are made with <code>numpy</code> and <code>scipy.stats</code> followed by 2 Multiple linear regressions models in <code>sklearn</code> and <code>StatModels</code>.</p>
 <p>Using only 1 variable yielded an R-squared of ~0.75 for the basic models.</p>
 <p>Using <code>sklearn's</code> an R-squared of ~0.816 is found.</p>
 <p>Introducing interaction terms with StatModels' <code>ols</code> found the highest R-squared value at 0.900</p>
@@ -1550,7 +1579,14 @@ dtype: float64</pre>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">&#182;</a></h2><p>In this notebook several different means of doing linear regression in python were explored.</p>
+<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>In this notebook several different means of doing linear regression in python were explored.</p>
 <p>Basic linear regression was done in <code>numpy</code> and <code>scipy.stats</code>, multiple linear regression was performed with <code>sklearn</code> and <code>StatsModels</code></p>
 <p>After spending a large amount of time considering the best way to handle all the string values in the data, it turned out that the best was not to deal with them at all. Dropping any non-numeric values improved the model significantly.</p>
 <p>There were many issues with collinearity across variables. Average Fare and Price are extremely closely related, which makes intuitive sense, considering Average Fare is just the mean price for that particular trip.</p>
@@ -1580,19 +1616,6 @@ dtype: float64</pre>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-    </div>
-</div>
-</div>
-
 </div>
  
 

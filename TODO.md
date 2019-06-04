@@ -1,10 +1,7 @@
 ## Site
-- Convert python posts to collection.
 - Clean up redundant css/javascript files
-- Have main page display collections rather than posts
 - Upload and add github links to each analysis
 - Add link to each notebook with a R<->Python equivalent
-- Create a combined list of all analyses
 - Create a page to sort by tags/categories
 - Display tags under each analysis preview 
 - Remove all comments that are prefixed by "//", it can cause issues with html_compress 
@@ -43,7 +40,7 @@
 ```bash
 mogrify -format png -path thumbs -thumbnail 600x400 python-unsplash.jpg
 ```
-## Learned
+## Notes
 - Represent keypress : <kbd>keyboard text</kbd>
 - `post`/`page` can be overridden in for-loops to embed includes in interesting ways  
 

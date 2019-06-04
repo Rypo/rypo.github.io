@@ -4,53 +4,50 @@
 <!doctype html>
 
 <html lang="{{ site.locale | slice: 0,2 | default: "en" }}" class="no-js">
-  <head>
-    {% include head.html %}
-    {% include head/rmdhead.html %}
-  </head>
 
-  <body class="layout--{{ page.layout | default: layout.layout }}{% if page.classes or layout.classes %}{{ page.classes | default: layout.classes | join: ' ' | prepend: ' ' }}{% endif %}">
+<head>
+  {% include head.html %}
+  {% include head/rmdhead.html %}
+</head>
 
-    {% include_cached browser-upgrade.html %}
-    {% include_cached masthead.html %}
+<body
+  class="layout--{{ page.layout | default: layout.layout }}{% if page.classes or layout.classes %}{{ page.classes | default: layout.classes | join: ' ' | prepend: ' ' }}{% endif %}">
 
-{% comment %} <div class="initial-content"> {% endcomment %}
-      {% comment %} {{ content }}
-    </div>  {% endcomment %}
+  {% include_cached browser-upgrade.html %}
+  {% include_cached masthead.html %}
 
-<div id="main" role="main" class="initial-content">
-  {% comment %} {% include sidebar.html %} {% endcomment %}
+  <div class="initial-content" id="main" role="main">
+    {% comment %} {% include sidebar.html %} {% endcomment %}
 
-  {% comment %} <div tabindex="-1" id="notebook" class="border-box-sizing">
-    <div class="container" id="notebook-container"> {% endcomment %}
-      {% unless page.header.overlay_color or page.header.overlay_image %}
-        <div class="fluid-row" id="header">
-            <h1 class="title toc-ignore">{{ page.title }}</h1> <!-- id="page-title"  class="page__title"-->
-        </div>
-      {% endunless %}
-      <div class="container-fluid main-container">
-    {{ content }}
+    {% unless page.header.overlay_color or page.header.overlay_image %}
+    <div class="fluid-row" id="header">
+      <h1 class="title toc-ignore">{{ page.title }}</h1>
+      <!-- id="page-title"  class="page__title"-->
     </div>
-    {% comment %} </div>
-  </div> {% endcomment %}
-</div>
-
-</div>
-    {% if site.search == true %}
-      <div class="search-content">
-        {% include_cached search/search_form.html %}
-      </div>
-    {% endif %}
-
-    <div class="page__footer">
-      <footer>
-        {% include footer/custom.html %}
-        {% include footer/rmdfooter.html %}
-        {% include_cached footer.html %}
-      </footer>
+    {% endunless %}
+    <div class="container-fluid main-container">
+      {{ content }}
     </div>
 
-    {% include scripts.html %}
+  </div>
 
-  </body>
+  </div>
+  {% if site.search == true %}
+  <div class="search-content">
+    {% include_cached search/search_form.html %}
+  </div>
+  {% endif %}
+
+  <div class="page__footer">
+    <footer>
+      {% include footer/custom.html %}
+      {% include footer/rmdfooter.html %}
+      {% include_cached footer.html %}
+    </footer>
+  </div>
+
+  {% include scripts.html %}
+
+</body>
+
 </html>
