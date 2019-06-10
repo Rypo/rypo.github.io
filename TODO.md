@@ -1,3 +1,5 @@
+Add milestones to github
+
 ## Site
 - Clean up redundant css/javascript files
 - Upload and add github links to each analysis
@@ -5,6 +7,7 @@
 - Create a page to sort by tags/categories
 - Display tags under each analysis preview 
 - Remove all comments that are prefixed by "//", it can cause issues with html_compress 
+
 ### Aesthetic
 - Replace placeholder image teasers with images relevant to each analysis.
 - Make collapsable headings work in python files 
