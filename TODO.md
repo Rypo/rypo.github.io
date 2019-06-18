@@ -1,4 +1,4 @@
-Add milestones to github
+- Add milestones to github
 
 ## Site
 - Clean up redundant css/javascript files
@@ -51,3 +51,9 @@ TODO: General catch all for any improvements.
 FIXME: Broken but not severe enough to prevent functionality.
 OPTIMIZE: Works but could be performed more efficiently.
 STOPSHIP: Critical importance, do not push site live until fixed.
+
+To hide the in[] out[] prompts:
+```py
+from IPython.core.display import display,HTML
+display(HTML('<style>.prompt{width: 0px; min-width: 0px; visibility: collapse}</style>'))
+```
