@@ -7,6 +7,8 @@
   {% include collecttags.html %}
 {% endif %} -->
 
-
-
+ {% for js in page.head_scripts %}
+     <script src="{{ js }}"></script>
+ {% endfor %}
+ 
 <!-- end custom head snippets -->
