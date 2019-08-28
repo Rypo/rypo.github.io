@@ -15,8 +15,8 @@ Areas of particular intrest:
   * [LIME](https://arxiv.org/pdf/1602.04938.pdf)
   * [TCAV](https://arxiv.org/pdf/1711.11279.pdf)
 * Natual Language Processing
-  * Information retrevial
-  * Structured and unstructured language generation
+  * Text Mining
+  * [Unstructured and semi-structured language generation](https://paperswithcode.com/area/natural-language-processing/text-generation)
   * Natural Language Understanding
 * Adversarial Attacks
   * [Adversarial Examples](https://arxiv.org/abs/1412.6572), [Physical World](https://arxiv.org/pdf/1607.02533.pdf)

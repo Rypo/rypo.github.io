@@ -1,6 +1,7 @@
 - Add milestones to github
-
+- Automate pipeline to strip out nb_raw cells and reformat document headers before committing notebooks to github
 ## Site
+- Reorder front page posts to display most recently changed rather than oldest->newest
 - Clean up redundant css/javascript files
 - Upload and add github links to each analysis
 - Add link to each notebook with a R<->Python equivalent
@@ -9,12 +10,12 @@
 - Remove all comments that are prefixed by "//", it can cause issues with html_compress 
 
 ### Aesthetic
-- Replace placeholder image teasers with images relevant to each analysis.
 - Make collapsable headings work in python files 
 - Add picture to sidebar
 
 ## Analyses
-- Flesh out explainations in latter analyses
+- Make tags more relevant to each analysis, reduce overlap (e.g. for agaricus, change to mention SHAP, LIME, ect..)
+- Flesh out explainations in later analyses
   - Look up specific analyses that need work, add to TODO
 ### R
 - Fix broken R notebooks and add to site.
