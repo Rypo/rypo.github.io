@@ -5,7 +5,10 @@ author_profile: true
 
 {{ content }}
 
-<h3 class="archive__subtitle">{{ site.data.ui-text[site.locale].recent_posts | default: "Recent Posts" }}</h3>
+{% if site.posts.size > 0 %}
+    <h3 class="archive__subtitle">{{ site.data.ui-text[site.locale].recent_posts | default: "Recent Posts" }}</h3>
+{% endif %}
+
 
 {% capture written_label %}'None'{% endcapture %}
 
@@ -19,7 +22,7 @@ author_profile: true
         {% endif %}
     {% endunless %}
     {% comment %} must be called "post" for archive-single.html to work properly {% endcomment %}
-    {% for post in collection.docs %} 
+    {% for post in collection.docs reversed %} 
         {% unless collection.output == false or collection.label == "posts" %}
             {% include archive-single.html %}
             {% include tags-list-custom.html cdoc=post %} 

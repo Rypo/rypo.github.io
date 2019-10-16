@@ -2,10 +2,11 @@
 <!-- insert favicons. use https://realfavicongenerator.net/ -->
 {% comment %} http://longqian.me/2017/02/09/github-jekyll-tag/ {% endcomment %}
 
-
-<!-- {% if site.tags != "" %}
+{% comment %}
+{% if site.tags != "" %}
   {% include collecttags.html %}
-{% endif %} -->
+{% endif %} 
+{% endcomment %}
 
  {% for js in page.head_scripts %}
      <script src="{{ js }}"></script>

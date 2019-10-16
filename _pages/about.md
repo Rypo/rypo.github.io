@@ -9,7 +9,7 @@ permalink: /about
 Eventually, this page will contain additional information about me. For now, the sidebar has relevant contact information.
 
 
-Areas of particular intrest:
+#### Areas of particular intrest:
 * Interpretability in Machine Learning
   * [SHAP](https://arxiv.org/abs/1705.07874)
   * [LIME](https://arxiv.org/pdf/1602.04938.pdf)

@@ -38,6 +38,7 @@ tmp/*
 *.sublime-project
 *.sublime-workspace
 .vscode
+.liquidrc
 
 # WIP files
 _drafts

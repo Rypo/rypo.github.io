@@ -1,0 +1,78 @@
+---
+layout: archive
+---
+
+{{ content }}
+
+{%- comment -%}{% include collecttags.html %}{%- endcomment -%}
+{%- comment -%}
+category[0] is the category name
+category[1] is the all posts that belong to the catgory
+
+
+{% assign rawcats = "" %}
+
+{% assign doc_groups = site.documents | group_by: "category" %}
+{% for doc in site.documents %}
+  {% assign tcats = doc.categories | join:'|' | append:'|' %}
+  {% assign rawcats = rawcats | append:tcats %}
+{% endfor %}
+{% assign rawcats = rawcats | split:'|' | sort %}
+
+{% assign categories_max = 0 %}
+{% assign site_categories = site_categories | split:'|' %}
+{% assign n_categories = site_categories.length %}
+{% for category in site_categories %}
+  length: {{ forloop.length }}<br>
+  category: {{ category }}<br>
+  category.size: {{ category.size }}<br>
+{% endfor %}
+
+
+
+{% assign site_categories = site.documents | group_by: "category" %}
+
+{% assign categories_max = 0 %}
+{% for category in site_categories %}
+{{ site_categories | inspect }}
+  length: {{ forloop.length }} <br>
+  category.name: {{ category.name }} <br>
+   category.items: {{ category.items }} <br> 
+  category.items.size: {{ category.items.size }} <br>
+  category.size: {{ category.size }} <br>
+
+  {% if category[1].size > categories_max %}
+    {% assign categories_max = category[1].size %}
+  {% endif %}
+{% endfor %}
+
+<ul class="taxonomy__index">
+  {% for i in (1..categories_max) reversed %}
+    {% for category in site_categories %}
+      {% if category[1].size == i %}
+        <li>
+          <a href="#{{ category[0] | slugify }}">
+            <strong>{{ category[0] }}</strong> <span class="taxonomy__count">{{ i }}</span>
+          </a>
+        </li>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+</ul>
+
+{% for i in (1..categories_max) reversed %}
+  {% for category in site_categories %}
+    {% if category[1].size == i %}
+      <section id="{{ category[0] | slugify | downcase }}" class="taxonomy__section">
+        <h2 class="archive__subtitle">{{ category[0] }}</h2>
+        <div class="entries-{{ page.entries_layout | default: 'list' }}">
+          {% for post in category.last %}
+            {% include archive-single.html type=page.entries_layout %}
+          {% endfor %}
+        </div>
+        <a href="#page-title" class="back-to-top">{{ site.data.ui-text[site.locale].back_to_top | default: 'Back to Top' }} &uarr;</a>
+      </section>
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+{%- endcomment -%}

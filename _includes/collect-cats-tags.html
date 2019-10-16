@@ -1,0 +1,39 @@
+{% assign rawtags = "" %}
+{% assign rawcats = "" %}
+{% for doc in site.documents %}
+  {% assign ttags = doc.tags | join:'|' | append:'|' %}
+  {% assign rawtags = rawtags | append:ttags %}
+  {%- comment -%} Categories {%- endcomment -%}
+  {% assign tcats = doc.categories | join:'|' | append:'|' %}
+  {% assign rawcats = rawcats | append:tcats %}
+{% endfor %}
+{% assign rawtags = rawtags | split:'|' | sort %}
+{% assign rawcats = rawcats | split:'|' | sort %}
+
+{% capture site_tags %}
+  {% for tag in rawtags %}
+    {% if tag != "" %}
+      {% if tags == "" %}
+        {% assign tags = tag | split:'|' %}
+      {% endif %}
+      {% unless tags contains tag %}
+        {% assign tags = tags | join:'|' | append:'|' | append:tag | split:'|' %}
+      {% endunless %}
+    {% endif %}
+  {% endfor %}
+  {{ tags }}
+{% endcapture %}
+
+{% capture site_categories %}
+  {% for cat in rawcats %}
+    {% if cat != "" %}
+      {% if cats == "" %}
+        {% assign cats = cat | split:'|' %}
+      {% endif %}
+      {% unless cats contains cat %}
+        {% assign cats = cats | join:'|' | append:'|' | append:cat %}
+      {% endunless %}
+    {% endif %}
+  {% endfor %}
+  {{ cats }}
+{% endcapture %}
