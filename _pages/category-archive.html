@@ -1,0 +1,24 @@
+---
+title: "Posts by Category"
+layout: categories
+permalink: /categories/
+author_profile: true
+---
+
+{% include group-by-array collection=site.documents field='categories' %}
+
+<div>
+  {% for tag in group_names %}
+    {% assign docs = group_items[forloop.index0] %}
+      {% comment %} [{{tag}}](#{{tag | slugify}}) {% endcomment %}
+       {% unless tag == empty %}
+        <h2 id="{{ tag | slugify }}">{{ tag }}</h2>
+        <ul>
+          {% for doc in docs %}
+            <li><a href='{{ doc.url }}'>{{ doc.title }}</a></li>
+              {% comment %} <a href='{{ site.baseurl }}{{ doc.url }}'>{{ doc.title }}</a> {% endcomment %}
+          {% endfor %}
+        </ul>
+    {% endunless %}
+  {% endfor %}
+</div> 

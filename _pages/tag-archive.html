@@ -1,0 +1,31 @@
+---
+title: "Posts by Tag"
+permalink: /tags/
+layout: tags
+author_profile: true
+---
+
+{% comment %} 
+Tag inspect:
+{{ site.tags | inspect }}
+{% endcomment %}
+
+{% include group-by-array collection=site.documents field='tags' %}
+
+
+<div>
+  {% for tag in group_names %}
+    {% assign docs = group_items[forloop.index0] %}
+       {% unless tag == empty %}
+        <h2 id="{{ tag | slugify }}">{{ tag }}</h2>
+        <ul>
+          {% for doc in docs %}
+            <li><a href='{{ doc.url }}'>{{ doc.title }}</a></li>
+          {% endfor %}
+        </ul>
+    {% endunless %}
+  {% endfor %}
+</div> 
+
+{% comment %} {{site.documents | group_by: 'tags' | map}} {% endcomment %}
+
