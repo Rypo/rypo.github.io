@@ -1,50 +1,83 @@
 ---
+render_with_liquid: false # https://jekyllrb.com/docs/liquid/tags/#code-snippet-highlighting
+body_data:
+  - data-jp-theme-light: true
+  - data-jp-theme-name: "JupyterLab Light"
+# toc: true
 ---
 
 <!doctype html>
-
 <html lang="{{ site.locale | slice: 0,2 | default: "en" }}" class="no-js">
-
 <head>
   {% include head.html %}
-  {% include head/custom.html %}
   {% include head/jnbhead.html %}
 </head>
+  {% comment %} <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light"></body> {% endcomment %}
+  {% comment %} <main> {% endcomment %}
+  
+  {% comment %} https://www.twilio.com/docs/studio/user-guide/liquid-template-language#allowed-collection-types {% endcomment %}
+  
+  {% for e in layout.body_data %}{% for item in e %}
+    {% capture bdstr %}{{ bdstr | default: ""}} {{ item[0] }}="{{ item[1] }}"{% endcapture %}
+  {% endfor %}{% endfor %}
 
-<body
-  class="layout--{{ page.layout | default: layout.layout }}{% if page.classes or layout.classes %}{{ page.classes | default: layout.classes | join: ' ' | prepend: ' ' }}{% endif %}">
-  {% include_cached browser-upgrade.html %}
-  {% include_cached masthead.html %}
+  <body class="layout--{{ page.layout | default: layout.layout }}{% if page.classes or layout.classes %}{{ page.classes | default: layout.classes | join: ' ' | prepend: ' ' }}{% endif %}" {{ bdstr -}}>
+    {% include_cached skip-links.html %}
+    {% include_cached masthead.html %}
+    {{ '<!--' | append: page.thumbnailsrc | append: '-->' }}
+    {% comment %} {% if page.toc %}
+      <aside class="sidebar__right {% if page.toc_sticky %}sticky{% endif %}">
+        <nav class="toc">
+          <header><h4 class="nav__title"><i class="fas fa-{{ page.toc_icon | default: 'file-alt' }}"></i> {{ page.toc_label | default: site.data.ui-text[site.locale].toc_label | default: "On this page" }}</h4></header>
+          {% include toc.html sanitize=true html=content h_min=1 h_max=6 class="toc__menu" skip_no_ids=true %}
+        </nav>
+      </aside>
+    {% endif %} {% endcomment %}
+    {% comment %} https://stackoverflow.com/questions/60247322/what-jekyll-syntax-to-filter-keyvalue-pair-in-front-matter {% endcomment %}
+    {% comment %} <div class="initial-content"> {% endcomment %}
+    <main id="main" role="main">
+    {% if page.title %}<meta itemprop="headline" content="{{ page.title | replace: '|', '&#124;' | markdownify | strip_html | strip_newlines | escape_once }}">{% endif %}
+    {% if page.excerpt %}<meta itemprop="description" content="{{ page.excerpt | markdownify | strip_html | strip_newlines | escape_once }}">{% endif %}
+    {% if page.date %}<meta itemprop="datePublished" content="{{ page.date | date_to_xmlschema }}">{% endif %}
+    {% if page.last_modified_at %}<meta itemprop="dateModified" content="{{ page.last_modified_at | date_to_xmlschema }}">{% endif %}
+      
+      {% unless page.header.overlay_color or page.header.overlay_image %}
+        <div class="fluid-row" id="header">
+          <h1 class="title toc-ignore">{{ page.title }}</h1>
+        </div>
 
-  <div id="main" role="main" class="initial-content">
-    {% comment %} {% include sidebar.html %} {% endcomment %}
+        {% include page__date.html %}
+        {% include page__meta.html %}
+        
 
-    <div tabindex="-1" id="notebook" class="border-box-sizing">
-      <div class="container" id="notebook-container">
-        {% unless page.header.overlay_color or page.header.overlay_image %}
-          <h1 id="page-title" class="page__title">{{ page.title }}</h1>
-        {% endunless %}
+      {% endunless %}
+      <div class="container-fluid main-container">
+
+        {% comment %} Convert the relative name to a slugged URL {% endcomment %}
+         {% if page.counterpart %}
+          {% assign cntr_link= site.documents | where_exp:"doc", "doc.path contains page.counterpart" | map: "url" | first %}
+          <a style="float:right" class="btn btn--info btn--large" href="{{ cntr_link }}">R Counterpart</a>
+         {% endif %}
+
         {{ content }}
+        {% include after-content.html %}
+        {% include page__taxonomy.html %}
       </div>
+    </main>
+
+    {% if site.search == true %}
+      <div class="search-content">
+        {% include_cached search/search_form.html %}
+      </div>
+    {% endif %}
+
+    <div id="footer" class="page__footer">
+      <footer>
+        {% include footer/custom.html %}
+        {% include_cached footer.html %}
+      </footer>
     </div>
-  </div>
 
-  </div>
-  {% if site.search == true %}
-  <div class="search-content">
-    {% include_cached search/search_form.html %}
-  </div>
-  {% endif %}
-
-  <div class="page__footer">
-    <footer>
-      {% include footer/custom.html %}
-      {% include_cached footer.html %}
-    </footer>
-  </div>
-
-  {% include scripts.html %}
-
-</body>
-
+    {% include scripts.html %}
+  </body>
 </html>

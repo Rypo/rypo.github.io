@@ -13,10 +13,12 @@
 <body
   class="layout--{{ page.layout | default: layout.layout }}{% if page.classes or layout.classes %}{{ page.classes | default: layout.classes | join: ' ' | prepend: ' ' }}{% endif %}">
 
-  {% include_cached browser-upgrade.html %}
+  {% comment %} {% include_cached browser-upgrade.html %} {% endcomment %}
+  {% include_cached skip-links.html %}
   {% include_cached masthead.html %}
 
-  <div class="initial-content" id="main" role="main">
+  <div id="main" role="main">
+    {% comment %} class="initial-content"  {% endcomment %}
     {% comment %} {% include sidebar.html %} {% endcomment %}
 
     {% unless page.header.overlay_color or page.header.overlay_image %}
@@ -24,9 +26,17 @@
       <h1 class="title toc-ignore">{{ page.title }}</h1>
       <!-- id="page-title"  class="page__title"-->
     </div>
+    {% include page__date.html %}
+    {% include page__meta.html %}
     {% endunless %}
     <div class="container-fluid main-container">
+      {% comment %} Convert the relative name to a slugged URL {% endcomment %}
+      {% if page.counterpart %}
+        {% assign cntr_link= site.documents | where_exp:"doc", "doc.path contains page.counterpart" | map: "url" | first %}
+        <a style="float:right" class="btn btn--info" href="{{ cntr_link }}">Python Counterpart</a>
+      {% endif %}
       {{ content }}
+      {% include page__taxonomy.html %}
     </div>
 
   </div>
