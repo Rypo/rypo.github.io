@@ -1,19 +1,20 @@
 ---
-title: "Multi-Model Approach to Unbalanced Data with Caravan Dataset"
-permalink: /r/unbalanced-data-caravan
-excerpt: "2016 Kaggle Caravan Insurance Challenge (Part 1 of 2). Dealing with unbalanced data."
+title: "Multi-Model Approach to Imbalanced Data with Caravan Dataset"
+# permalink: /r/unbalanced-data-caravan
+slug: imbalanced-data-caravan
+excerpt: "2016 Kaggle Caravan Insurance Challenge (Part 1 of 2). Dealing with imbalanced data."
+collection: r
 categories: [r, multimodel, classification]
-tags: [r, unbalanced, SMOTE, undersampling,oversampling, RandomForest, Bagging, Boosting]
-layout: rmd
+tags: [r, imbalanced, SMOTE, undersampling,oversampling, RandomForest, Bagging, Boosting]
+# layout: rmd
 author: "Ryan Gust"
 date: 2018-12-22
 last_modified_at: 2019-01-17
 header:
   teaser: assets/images/teasers/thumbs/imbdata.png
+counterpart: 5_imbalanced_bag_boost_rf
+thumbnailsrc: https://www.datascience.com/blog/imbalanced-data
 ---
-<!--Image thumbnail credit:
-https://www.datascience.com/blog/imbalanced-data
--->
 
 <div id="overview" class="section level2">
 <h2>Overview</h2>
@@ -24,7 +25,7 @@ https://www.datascience.com/blog/imbalanced-data
 <li>Boosting (2 variants)</li>
 <li>Random Forest</li>
 </ul>
-<p>As we are working with unbalanced data, each model will have be run against a training dataset in 4 different states: * Unbalanced (No modifications) * Undersampled * Oversampled * SMOTE * ROSE</p>
+<p>As we are working with imbalanced data, each model will have be run against a training dataset in 4 different states: * Imbalanced (No modifications) * Undersampled * Oversampled * SMOTE * ROSE</p>
 <div id="imports" class="section level3">
 <h3>Imports</h3>
 <pre class="r"><code>library(tidyverse)
@@ -103,7 +104,7 @@ mcor &lt;- cormat %&gt;% melt()</code></pre>
   geom_tile(color=&quot;white&quot;) + 
   scale_fill_gradient2(low= &quot;blue&quot;, high = &quot;red&quot;, mid = &quot;white&quot;) + 
   theme(axis.text.x = element_text(angle = 90))</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-5-1.png" width="1152" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-5-1.png" width="1152" /></p>
 <pre class="r"><code>f43 &lt;- unique(mcor$Var2)[0:43]
 
 h1cor &lt;- mcor %&gt;% filter(Var1 %in% f43 &amp; Var2 %in% f43)
@@ -122,7 +123,7 @@ p2 &lt;- h2cor %&gt;%
   theme(axis.text.x = element_text(angle = 90))
 
 grid.arrange(p1, p2, nrow = 1)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-6-1.png" width="1344" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-6-1.png" width="1344" /></p>
 <p>After zooming in a bit, the Quadrant I, L4 keys plot (right) shows how variables starting with <code>P</code> each have a corresponding variable starting with <code>A</code> this means that having both in our data will likely provide little value to the analysis.</p>
 </div>
 <div id="models" class="section level2">
@@ -145,12 +146,12 @@ props &lt;- data.frame(bind_rows(table(train_data$CARAVAN),
                      table(up_train$CARAVAN),
                      table(smote_train$CARAVAN)),
                      #table(rose_train$CARAVAN)), 
-                    row.names = c(&#39;Unbalanced&#39;,&#39;Downsample&#39;,&#39;Upsample&#39;,&#39;SMOTE&#39;))
+                    row.names = c(&#39;Imbalanced&#39;,&#39;Downsample&#39;,&#39;Upsample&#39;,&#39;SMOTE&#39;))
 props$Total &lt;- props$No+props$Yes
 props</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["No"],"name":[1],"type":["int"],"align":["right"]},{"label":["Yes"],"name":[2],"type":["int"],"align":["right"]},{"label":["Total"],"name":[3],"type":["int"],"align":["right"]}],"data":[{"1":"6927","2":"440","3":"7367","_rn_":"Unbalanced"},{"1":"440","2":"440","3":"880","_rn_":"Downsample"},{"1":"6927","2":"6927","3":"13854","_rn_":"Upsample"},{"1":"1760","2":"1320","3":"3080","_rn_":"SMOTE"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["No"],"name":[1],"type":["int"],"align":["right"]},{"label":["Yes"],"name":[2],"type":["int"],"align":["right"]},{"label":["Total"],"name":[3],"type":["int"],"align":["right"]}],"data":[{"1":"6927","2":"440","3":"7367","_rn_":"Imbalanced"},{"1":"440","2":"440","3":"880","_rn_":"Downsample"},{"1":"6927","2":"6927","3":"13854","_rn_":"Upsample"},{"1":"1760","2":"1320","3":"3080","_rn_":"SMOTE"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 <p>We can see here how the various methods of resampling affected the training data proportions. Only upsampling increased the size of the training set, all others used a decreasing or size maintaining rebalancing approach.</p>
@@ -224,8 +225,8 @@ props</code></pre>
 <p>Defining a few helper functions drastically reduces the amount of repeatitious code required. The <code>caret</code> package makes this very easy for us by accepting nearly identical baseline parameters for all models.</p>
 <pre class="r"><code>ctrl &lt;- trainControl(method = &quot;none&quot;, classProbs = TRUE)</code></pre>
 <p>This will serve as the baseline training control for all models. Setting method to “none” disables cross validation, we could certainly build better models with CV enabled, but it significantly increases training time, later notebooks will explore this in detail. Setting <code>classProbs=TRUE</code> gives us probabilities rather than binary outputs and so that <code>ROC</code> may be used as our evaluation metric.</p>
-<div id="unbalanced" class="section level3">
-<h3>Unbalanced</h3>
+<div id="imbalanced" class="section level3">
+<h3>Imbalanced</h3>
 <p>To establish a frame of reference, we will first try running all four models against the original data, making to attempts to correct the imbalance.</p>
 <div id="bagging" class="section level4">
 <h4>Bagging</h4>
@@ -241,7 +242,7 @@ head(preds)</code></pre>
 ## Levels: No Yes</code></pre>
 <p>It is all too easy to be mislead by a high accuracy score, 91.6% would be quite good if we were dealing with balanced data, but with this set being as imbalanced as it is, this score is actually worse than if the model had just chosen 0(‘No’) for every sample, taking this route would have yielded ~94% accuracy.</p>
 <pre class="r"><code>cfmROC(preds,test_data$CARAVAN)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-12-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-12-1.png" width="768" /></p>
 </div>
 <div id="boosting-adaboost" class="section level4">
 <h4>Boosting (Adaboost)</h4>
@@ -254,7 +255,7 @@ head(preds)</code></pre>
 pred &lt;- predict(ada_orig, subset(test_data, select=-CARAVAN))
 
 cfmROC(pred, test_data$CARAVAN)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-13-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-13-1.png" width="768" /></p>
 </div>
 <div id="random-forest" class="section level4">
 <h4>Random Forest</h4>
@@ -266,7 +267,7 @@ cfmROC(pred, test_data$CARAVAN)</code></pre>
 
 pred &lt;- predict(rf_orig, subset(test_data, select=-CARAVAN))
 cfmROC(pred, test_data$CARAVAN)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-14-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-14-1.png" width="768" /></p>
 </div>
 <div id="xgboost" class="section level4">
 <h4>XGBoost</h4>
@@ -291,7 +292,7 @@ dtest &lt;- xgb.DMatrix(data = mat_test, label = c_label_test)
 preds_xgb &lt;- predict(xgb_orig, dtest)</code></pre>
 <pre class="r"><code># convert xgb&#39;s predicted probabilities back into binary output 
 cfmROC(as.factor(ifelse(preds_xgb &gt; 0.5, 1, 0)), as.factor(c_label_test))</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-18-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-18-1.png" width="768" /></p>
 </div>
 </div>
 <div id="downsampling" class="section level3">
@@ -307,25 +308,25 @@ cfmROC(as.factor(ifelse(preds_xgb &gt; 0.5, 1, 0)), as.factor(c_label_test))</co
 
 pred &lt;- predict(bag_down, subset(test_data, select=-CARAVAN))
 cfmROC(pred,test_data$CARAVAN)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-19-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-19-1.png" width="768" /></p>
 <p>The only change moving between data resamplings is the <code>data = ..</code> parameter, every other will be fixed constant. Hereafter, we can use the nice little wrapper function <code>run.model</code> to help keep us <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">DRY</a>.</p>
 </div>
 <div id="boosting-adaboost-1" class="section level4">
 <h4>Boosting (Adaboost)</h4>
 <pre class="r"><code>ada_down &lt;- run.model(method = &quot;ada&quot;, traind = down_train, testd = test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-20-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-20-1.png" width="768" /></p>
 </div>
 <div id="random-forest-1" class="section level4">
 <h4>Random Forest</h4>
 <pre class="r"><code>rf_down &lt;- run.model(method = &quot;rf&quot;, traind = down_train, testd = test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-21-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-21-1.png" width="768" /></p>
 </div>
 <div id="xgboost-1" class="section level4">
 <h4>XGBoost</h4>
 <pre class="r"><code>xgb_down &lt;- run.model(method = &quot;xgb&quot;, traind = down_train, testd = test_data)</code></pre>
 <pre><code>## [1]  train-error:0.332955 
 ## [2]  train-error:0.286364</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-22-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-22-1.png" width="768" /></p>
 </div>
 </div>
 <div id="upsampling" class="section level3">
@@ -334,24 +335,24 @@ cfmROC(pred,test_data$CARAVAN)</code></pre>
 <div id="bagging-2" class="section level4">
 <h4>Bagging</h4>
 <pre class="r"><code>bag_up &lt;- run.model(method = &quot;treebag&quot;, up_train, test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-23-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-23-1.png" width="768" /></p>
 </div>
 <div id="boosting-adaboost-2" class="section level4">
 <h4>Boosting (Adaboost)</h4>
 <pre class="r"><code>ada_up &lt;- run.model(method = &quot;ada&quot;, up_train, test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-24-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-24-1.png" width="768" /></p>
 </div>
 <div id="random-forest-2" class="section level4">
 <h4>Random Forest</h4>
 <pre class="r"><code>rf_up &lt;- run.model(method = &quot;rf&quot;, up_train, test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-25-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-25-1.png" width="768" /></p>
 </div>
 <div id="xgboost-2" class="section level4">
 <h4>XGBoost</h4>
 <pre class="r"><code>xgb_up &lt;- run.model(method = &quot;xgb&quot;, up_train, test_data)</code></pre>
 <pre><code>## [1]  train-error:0.317814 
 ## [2]  train-error:0.305688</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-26-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-26-1.png" width="768" /></p>
 </div>
 </div>
 <div id="smote" class="section level3">
@@ -360,24 +361,24 @@ cfmROC(pred,test_data$CARAVAN)</code></pre>
 <div id="bagging-3" class="section level4">
 <h4>Bagging</h4>
 <pre class="r"><code>bag_smote &lt;- run.model(method = &quot;treebag&quot;, smote_train, test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-27-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-27-1.png" width="768" /></p>
 </div>
 <div id="boosting-adaboost-3" class="section level4">
 <h4>Boosting (Adaboost)</h4>
 <pre class="r"><code>ada_smote &lt;- run.model(method = &quot;ada&quot;, smote_train, test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-28-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-28-1.png" width="768" /></p>
 </div>
 <div id="random-forest-3" class="section level4">
 <h4>Random Forest</h4>
 <pre class="r"><code>rf_smote &lt;- run.model(method = &quot;rf&quot;, smote_train, test_data)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-29-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-29-1.png" width="768" /></p>
 </div>
 <div id="xgboost-3" class="section level4">
 <h4>XGBoost</h4>
 <pre class="r"><code>xgb_smote &lt;- run.model(method = &quot;xgb&quot;, smote_train, test_data)</code></pre>
 <pre><code>## [1]  train-error:0.234091 
 ## [2]  train-error:0.183117</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-30-1.png" width="768" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-30-1.png" width="768" /></p>
 </div>
 </div>
 <div id="feature-importance" class="section level3">
@@ -400,16 +401,16 @@ get.imps &lt;- function(models = list(bag,ada,rf,xgb)){
   imps[[4]] &lt;- xgb.importance(model = models[[4]])
   return(imps)
 }</code></pre>
-<pre class="r"><code>plot.featimps &lt;- function(resample.method=&quot;Unbalanced&quot;){
+<pre class="r"><code>plot.featimps &lt;- function(resample.method=&quot;Imbalanced&quot;){
   #&#39; Plot feature importances
   #&#39;
   #&#39; Plots all four models feature importances
   #&#39;
-  #&#39; @param resample.method model set to use: (&quot;Unbalanced&quot; | &quot;Downsampled&quot; | &quot;Upsampled&quot; | &quot;SMOTE&quot;)
+  #&#39; @param resample.method model set to use: (&quot;Imbalanced&quot; | &quot;Downsampled&quot; | &quot;Upsampled&quot; | &quot;SMOTE&quot;)
   #&#39;
   
   if(grepl(&quot;(unb|ori).*&quot;,resample.method,ignore.case = TRUE)){
-    resample.method &lt;- &quot;Unbalanced&quot;
+    resample.method &lt;- &quot;Imbalanced&quot;
     imps &lt;- get.imps(list(bag_orig, ada_orig, rf_orig, xgb_orig))
   }else if(grepl(&quot;(und|dow).*&quot;,resample.method, ignore.case = TRUE)){
     resample.method &lt;- &quot;Downsampled&quot;
@@ -422,13 +423,13 @@ get.imps &lt;- function(models = list(bag,ada,rf,xgb)){
     imps &lt;- get.imps(list(bag_smote, ada_smote, rf_smote, xgb_smote))
   } else stop(&quot;invalid resample selection (&#39;orig&#39;|&#39;down&#39;|&#39;up&#39;|&#39;smote&#39;)&quot;)
   
-  # resample.method &lt;- ifelse(grepl(&quot;(unba|ori).+&quot;,resample.method,ignore.case = TRUE),&quot;Unbalanced&quot;,resample.method)
+  # resample.method &lt;- ifelse(grepl(&quot;(unba|ori).+&quot;,resample.method,ignore.case = TRUE),&quot;Imbalanced&quot;,resample.method)
   # resample.method &lt;- ifelse(grepl(&quot;(und|dow).+&quot;,resample.method, ignore.case = TRUE),&quot;Downsampled&quot;,resample.method)
   # resample.method &lt;- ifelse(grepl(&quot;(up|ove).+&quot;,resample.method, ignore.case = TRUE),&quot;Upsampled&quot;,resample.method)
   # resample.method &lt;- ifelse(grepl(&quot;sm.+&quot;,resample.method, ignore.case = TRUE),&quot;SMOTE&quot;,resample.method)
 
   # imps &lt;- switch (resample.method,
-  #   Unbalanced = get.imps(list(bag_orig, ada_orig, rf_orig, xgb_orig)),
+  #   Imbalanced = get.imps(list(bag_orig, ada_orig, rf_orig, xgb_orig)),
   #   Downsampled = get.imps(list(bag_down, ada_down, rf_down, xgb_down)),
   #   Upsampled = get.imps(list(bag_up, ada_up, rf_up, xgb_up)),
   #   SMOTE = get.imps(list(bag_smote, ada_smote, rf_smote, xgb_smote))
@@ -475,14 +476,14 @@ get.imps &lt;- function(models = list(bag,ada,rf,xgb)){
 }</code></pre>
 <pre class="r"><code>grepl(&quot;sm.+&quot;,&quot;smt&quot;, ignore.case = TRUE)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
-<pre class="r"><code>plot.featimps(&quot;Unbalanced&quot;)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-34-1.png" width="960" /></p>
+<pre class="r"><code>plot.featimps(&quot;Imbalanced&quot;)</code></pre>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-34-1.png" width="960" /></p>
 <pre class="r"><code>plot.featimps(&quot;Down&quot;)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-35-1.png" width="960" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-35-1.png" width="960" /></p>
 <pre class="r"><code>plot.featimps(&quot;Up&quot;)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-36-1.png" width="960" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-36-1.png" width="960" /></p>
 <pre class="r"><code>plot.featimps(&quot;SMOTE&quot;)</code></pre>
-<p><img src="/assets/images/rimgs/2018-12-22-unbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-37-1.png" width="960" /></p>
+<p><img src="/assets/images/rimgs/2018-12-22-imbalanced-bag-boost-rf_files/figure-html/unnamed-chunk-37-1.png" width="960" /></p>
 </div>
 </div>
 <div id="conclusions" class="section level2">

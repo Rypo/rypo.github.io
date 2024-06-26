@@ -1,0 +1,2918 @@
+---
+title: 'Modeling on Imbalanced Data: Caravan Insurance'
+# permalink: /python/unbalanced-data-caravan
+slug: imbalanced-data-caravan
+excerpt: 2016 Kaggle Caravan Insurance Challenge (Part 1 of 2). Dealing with imbalanced
+  data.
+collection: python
+categories:
+- python
+- multimodel
+- classification
+tags:
+- python
+- imbalanced
+- SMOTE
+- undersampling
+- oversampling
+- RandomForest
+- Bagging
+- Boosting
+# layout: single-jnb
+classes: 
+- jp-Notebook
+author: Ryan Gust
+date: '2018-10-14'
+last_modified_at: '2019-06-04'
+header:
+  teaser: assets/images/teasers/thumbs/imbdata.png
+counterpart: 2018-12-22-imbalanced-bag-boost-rf
+thumbnailsrc: https://www.datascience.com/blog/imbalanced-data
+---
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Overview">Overview<a class="anchor-link" href="#Overview">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>This notebook will look at the 2016 Kaggle Caravan Insurance Challenge. The data was collected to see with the following goal in mind:</p>
+<blockquote>
+<p>Can you predict who would be interested in buying a caravan insurance policy and give an explanation why?</p>
+</blockquote>
+<p>Several models will be used in attempting to answer this question:</p>
+<ul>
+<li>Bagging</li>
+<li>Boosting (2 variants)</li>
+<li>Random Forest</li>
+</ul>
+<p>As we are working with imbalanced data, each model will have be run against a training dataset in 4 different states:</p>
+<ul>
+<li>Imbalanced (No modifications)</li>
+<li>Undersampled</li>
+<li>Oversampled</li>
+<li>SMOTE</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Imports">Imports<a class="anchor-link" href="#Imports">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1">#%matplotlib inline</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">BaggingClassifier</span><span class="p">,</span> <span class="n">RandomForestClassifier</span><span class="p">,</span> <span class="n">AdaBoostClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">roc_curve</span><span class="p">,</span> <span class="n">classification_report</span><span class="p">,</span> <span class="n">f1_score</span>
+<span class="kn">from</span> <span class="nn">lightgbm</span> <span class="kn">import</span> <span class="n">LGBMClassifier</span>
+
+<span class="kn">from</span> <span class="nn">imblearn.over_sampling</span> <span class="kn">import</span> <span class="n">RandomOverSampler</span><span class="p">,</span><span class="n">SMOTE</span>
+<span class="kn">from</span> <span class="nn">imblearn.under_sampling</span> <span class="kn">import</span> <span class="n">RandomUnderSampler</span>
+<span class="kn">from</span> <span class="nn">imblearn.metrics</span> <span class="kn">import</span> <span class="n">classification_report_imbalanced</span>
+
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">ss</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>C:\Users\Rygu\Anaconda3\envs\i4061\lib\site-packages\sklearn\externals\six.py:31: DeprecationWarning: The module is deprecated in version 0.21 and will be removed in version 0.23 since we've dropped support for Python 2.7. Please rely on the official version of six (https://pypi.org/project/six/).
+  "(https://pypi.org/project/six/).", DeprecationWarning)
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">RS</span> <span class="o">=</span> <span class="mi">404</span> <span class="c1"># Random state</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Data">Data<a class="anchor-link" href="#Data">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>The dataset used is from the CoIL Challenge 2000 datamining competition. It may be obtained from: <a href="https://www.kaggle.com/uciml/caravan-insurance-challenge">https://www.kaggle.com/uciml/caravan-insurance-challenge</a></p>
+<p>It contains information on customers of an insurance company. The data consists of 86 variables and includes product usage data and socio-demographic data derived from zip area codes.</p>
+<p>A description of each variable may be found at the <a href="https://www.kaggle.com/uciml/caravan-insurance-challenge">link listed above</a>.</p>
+<p>Each number corresponds with a certain key, specific to each variable. There are 5 levels of keys, L0-L4 each key represents a different group range. As a sample:</p>
+<pre><code>L0 - Customer subtype (1-41)
+    1: High Income, expensive child
+    2: Very Important Provincials
+    3: High status seniors
+    ...
+L1 - average age keys (1-6):
+    1: 20-30 years 
+    2: 30-40 years 
+    3: 40-50 years 
+    ...
+L2 - customer main type keys (1-10):
+    1: Successful hedonists
+    2: Driven Growers
+    3: Average Family
+    ...
+L3 - percentage keys (0-9):
+    0: 0%
+    1: 1 - 10%
+    2: 11 - 23%
+    3: 24 - 36%
+    ...
+L4 - total number keys (0-9):
+    0: 0
+    1: 1 - 49
+    2: 50 - 99
+    3: 100 - 199
+    ...
+</code></pre>
+<p>The variable descriptions are quite important as it appears as though the variable names themselves are abbreviated in Dutch. One helpful pattern to notice is the letters that variables begin with:</p>
+<ul>
+<li><strong>M</strong> - primary demographics?, no guess for abbreviation</li>
+<li><strong>A</strong> - numbers, possibly for dutch word <em>aantal</em></li>
+<li><strong>P</strong> - percents, possibly for dutch word <em>procent</em></li>
+</ul>
+<hr/>
+<p><strong>Acknowledgements</strong></p>
+<p>P. van der Putten and M. van Someren (eds) . CoIL Challenge 2000: The Insurance Company Case. Published by Sentient Machine Research, Amsterdam. Also a Leiden Institute of Advanced Computer Science Technical Report 2000-09. June 22, 2000.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">carav</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'data/caravan-insurance-challenge.csv'</span><span class="p">)</span>
+<span class="n">carav</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>ORIGIN</th>
+<th>MOSTYPE</th>
+<th>MAANTHUI</th>
+<th>MGEMOMV</th>
+<th>MGEMLEEF</th>
+<th>MOSHOOFD</th>
+<th>MGODRK</th>
+<th>MGODPR</th>
+<th>MGODOV</th>
+<th>MGODGE</th>
+<th>...</th>
+<th>APERSONG</th>
+<th>AGEZONG</th>
+<th>AWAOREG</th>
+<th>ABRAND</th>
+<th>AZEILPL</th>
+<th>APLEZIER</th>
+<th>AFIETS</th>
+<th>AINBOED</th>
+<th>ABYSTAND</th>
+<th>CARAVAN</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>train</td>
+<td>33</td>
+<td>1</td>
+<td>3</td>
+<td>2</td>
+<td>8</td>
+<td>0</td>
+<td>5</td>
+<td>1</td>
+<td>3</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>1</th>
+<td>train</td>
+<td>37</td>
+<td>1</td>
+<td>2</td>
+<td>2</td>
+<td>8</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+<td>4</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>2</th>
+<td>train</td>
+<td>37</td>
+<td>1</td>
+<td>2</td>
+<td>2</td>
+<td>8</td>
+<td>0</td>
+<td>4</td>
+<td>2</td>
+<td>4</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>3</th>
+<td>train</td>
+<td>9</td>
+<td>1</td>
+<td>3</td>
+<td>3</td>
+<td>3</td>
+<td>2</td>
+<td>3</td>
+<td>2</td>
+<td>4</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>4</th>
+<td>train</td>
+<td>40</td>
+<td>1</td>
+<td>4</td>
+<td>2</td>
+<td>10</td>
+<td>1</td>
+<td>4</td>
+<td>1</td>
+<td>4</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>5 rows × 87 columns</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Since the competition has ended, all the data has been made available as one large concatenated dataset. Luckily, in doing so they've also added an additional column "ORIGIN" which indicated where the data was originally from, so we can simulate what the competition was initially like.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">carav</span><span class="o">.</span><span class="n">ORIGIN</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>train    5822
+test     4000
+Name: ORIGIN, dtype: int64</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Exploratory-Data-Analysis">Exploratory Data Analysis<a class="anchor-link" href="#Exploratory-Data-Analysis">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>No NA values, all variables are type of int64. The data is peculiar in that every numeric value stands for an attribute of a person. Even variables that could be continuous, such as income, have been binned. In this sense, this dataset is entirely comprised of Categorical and Ordinal values. Other than potential collinearity between percentage and range values, the data is mostly clean.</p>
+<p>For the EDA portion, we will cheat a bit and use knowledge from the combined dataset to get a better picture of the data. During the actual competition, contestants would not have had access to the <code>CARAVAN</code> variable where <code>ORIGIN</code> = <code>test</code></p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">carav</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>&lt;class 'pandas.core.frame.DataFrame'&gt;
+RangeIndex: 9822 entries, 0 to 9821
+Data columns (total 87 columns):
+ORIGIN      9822 non-null object
+MOSTYPE     9822 non-null int64
+MAANTHUI    9822 non-null int64
+MGEMOMV     9822 non-null int64
+MGEMLEEF    9822 non-null int64
+MOSHOOFD    9822 non-null int64
+MGODRK      9822 non-null int64
+MGODPR      9822 non-null int64
+MGODOV      9822 non-null int64
+MGODGE      9822 non-null int64
+MRELGE      9822 non-null int64
+MRELSA      9822 non-null int64
+MRELOV      9822 non-null int64
+MFALLEEN    9822 non-null int64
+MFGEKIND    9822 non-null int64
+MFWEKIND    9822 non-null int64
+MOPLHOOG    9822 non-null int64
+MOPLMIDD    9822 non-null int64
+MOPLLAAG    9822 non-null int64
+MBERHOOG    9822 non-null int64
+MBERZELF    9822 non-null int64
+MBERBOER    9822 non-null int64
+MBERMIDD    9822 non-null int64
+MBERARBG    9822 non-null int64
+MBERARBO    9822 non-null int64
+MSKA        9822 non-null int64
+MSKB1       9822 non-null int64
+MSKB2       9822 non-null int64
+MSKC        9822 non-null int64
+MSKD        9822 non-null int64
+MHHUUR      9822 non-null int64
+MHKOOP      9822 non-null int64
+MAUT1       9822 non-null int64
+MAUT2       9822 non-null int64
+MAUT0       9822 non-null int64
+MZFONDS     9822 non-null int64
+MZPART      9822 non-null int64
+MINKM30     9822 non-null int64
+MINK3045    9822 non-null int64
+MINK4575    9822 non-null int64
+MINK7512    9822 non-null int64
+MINK123M    9822 non-null int64
+MINKGEM     9822 non-null int64
+MKOOPKLA    9822 non-null int64
+PWAPART     9822 non-null int64
+PWABEDR     9822 non-null int64
+PWALAND     9822 non-null int64
+PPERSAUT    9822 non-null int64
+PBESAUT     9822 non-null int64
+PMOTSCO     9822 non-null int64
+PVRAAUT     9822 non-null int64
+PAANHANG    9822 non-null int64
+PTRACTOR    9822 non-null int64
+PWERKT      9822 non-null int64
+PBROM       9822 non-null int64
+PLEVEN      9822 non-null int64
+PPERSONG    9822 non-null int64
+PGEZONG     9822 non-null int64
+PWAOREG     9822 non-null int64
+PBRAND      9822 non-null int64
+PZEILPL     9822 non-null int64
+PPLEZIER    9822 non-null int64
+PFIETS      9822 non-null int64
+PINBOED     9822 non-null int64
+PBYSTAND    9822 non-null int64
+AWAPART     9822 non-null int64
+AWABEDR     9822 non-null int64
+AWALAND     9822 non-null int64
+APERSAUT    9822 non-null int64
+ABESAUT     9822 non-null int64
+AMOTSCO     9822 non-null int64
+AVRAAUT     9822 non-null int64
+AAANHANG    9822 non-null int64
+ATRACTOR    9822 non-null int64
+AWERKT      9822 non-null int64
+ABROM       9822 non-null int64
+ALEVEN      9822 non-null int64
+APERSONG    9822 non-null int64
+AGEZONG     9822 non-null int64
+AWAOREG     9822 non-null int64
+ABRAND      9822 non-null int64
+AZEILPL     9822 non-null int64
+APLEZIER    9822 non-null int64
+AFIETS      9822 non-null int64
+AINBOED     9822 non-null int64
+ABYSTAND    9822 non-null int64
+CARAVAN     9822 non-null int64
+dtypes: int64(86), object(1)
+memory usage: 6.5+ MB
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>One nice feature of this dataset is that every feature is already encoded as an integer representation, saving us the conversion work. The downside of this is that, without reading the dataset description, it isn't easily interpretable, particularly true for those who do not understand Dutch, as well.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">carav</span><span class="o">.</span><span class="n">CARAVAN</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0    9236
+1     586
+Name: CARAVAN, dtype: int64</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>We can see that we are dealing with a very imbalanced dataset, if this is not factored in during modeling, any predictions will be wildly biased toward non-policy holders.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">carav</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'ORIGIN'</span><span class="p">])</span><span class="o">.</span><span class="n">corr</span><span class="p">());</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_16_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>A correlation plot reveals some rather interesting pattens in the data. There is a clear divide between the two groupings listed in the description file with keys L3 and L4</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">carav</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'ORIGIN'</span><span class="p">])</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,:</span><span class="mi">43</span><span class="p">]</span><span class="o">.</span><span class="n">corr</span><span class="p">(),</span> <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'coolwarm'</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">carav</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">'ORIGIN'</span><span class="p">])</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">43</span><span class="p">:]</span><span class="o">.</span><span class="n">corr</span><span class="p">(),</span> <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">'coolwarm'</span><span class="p">,</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"L3 keys: Upper-left Corrplot"</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"L4 keys: Bottom-right Corrplot"</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_18_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>After zooming in a bit, the L4 keys plot (right) shows how variables starting with <code>P</code> each have a corresponding variable starting with <code>A</code> this means that having both in our data will likely provide little value.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># To see a numeric representation of the heatmaps</span>
+<span class="c1"># carav.loc[:,(carav.columns.str.startswith('P') | carav.columns.str.startswith('A'))].corr()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Drop percentage representations, keep raw number range</span>
+<span class="n">carav_np</span> <span class="o">=</span> <span class="n">carav</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">carav</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,(</span><span class="n">carav</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'P'</span><span class="p">))])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">carav_np</span><span class="o">.</span><span class="n">to_feather</span><span class="p">(</span><span class="s1">'data/reduced_cmbd.df'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p><strong>Note:</strong> to be test our theory, multiple models would need to be tested on those with and without the percentage representation.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Models">Models<a class="anchor-link" href="#Models">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>4 Models will be used in total: <code>BaggingClassifier</code>, <code>RandomForestClassifier</code>, <code>AdaBoostClassifier</code> from sklearn and Microsoft's <code>lightgbm</code></p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Helper-functions">Helper functions<a class="anchor-link" href="#Helper-functions">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span>
+                          <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cf_report</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">title</span><span class="o">=</span><span class="s1">'Confusion matrix'</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Blues</span><span class="p">,</span> <span class="n">cbar</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This function prints and plots the confusion matrix.</span>
+<span class="sd">    Normalization can be applied by setting `normalize=True`.</span>
+<span class="sd">    """</span>
+    <span class="n">cm</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+        <span class="n">cm</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float'</span><span class="p">)</span> <span class="o">/</span> <span class="n">cm</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        
+    <span class="k">if</span> <span class="n">cf_report</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span><span class="n">y_pred</span><span class="p">))</span>
+    
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">(),</span> <span class="n">ax</span><span class="p">)</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">cm</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">'nearest'</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">cbar</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.046</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.04</span><span class="p">)</span> <span class="c1"># "Magic" numbers (https://stackoverflow.com/a/26720422/10939610)</span>
+    
+    <span class="n">tick_marks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">classes</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">classes</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">tick_marks</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">classes</span><span class="p">)</span>
+
+    <span class="n">fmt</span> <span class="o">=</span> <span class="s1">'.2f'</span> <span class="k">if</span> <span class="n">normalize</span> <span class="k">else</span> <span class="s1">'d'</span>
+    <span class="n">thresh</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">range</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="nb">format</span><span class="p">(</span><span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">fmt</span><span class="p">),</span>
+                 <span class="n">horizontalalignment</span><span class="o">=</span><span class="s2">"center"</span><span class="p">,</span>
+                 <span class="n">color</span><span class="o">=</span><span class="s2">"white"</span> <span class="k">if</span> <span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">thresh</span> <span class="k">else</span> <span class="s2">"black"</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'True label'</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Predicted label'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">plot_roc</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Plot ROC curve"""</span> 
+    <span class="n">false_positive_rate</span><span class="p">,</span> <span class="n">true_positive_rate</span><span class="p">,</span> <span class="n">threshold</span> <span class="o">=</span> <span class="n">roc_curve</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">roc_score</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span><span class="n">y_pred</span><span class="p">)</span>
+    
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">(),</span> <span class="n">ax</span><span class="p">)</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Receiver Operating Characteristic"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">false_positive_rate</span><span class="p">,</span> <span class="n">true_positive_rate</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">".7"</span><span class="p">),</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">".7"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="s1">'ROC: </span><span class="si">{:.5f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">roc_score</span><span class="p">),</span> <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span><span class="mf">0.05</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"True Positive Rate"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"False Positive Rate"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">roc_score</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">feat_imps</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">""" Dataframe containing each feature with its corresponding importance in the given model</span>
+<span class="sd">    </span>
+<span class="sd">    Args</span>
+<span class="sd">    ----</span>
+<span class="sd">        model : model, classifier that supports .feature_importances_ (RandomForest, AdaBoost, ect..)</span>
+<span class="sd">        X_train : array like, training data object</span>
+<span class="sd">        plot : boolean, if True, plots the data in the form of a bargraph</span>
+<span class="sd">        n : int, only applicable if plot=True, number of features to plot, (default=15)</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        pandas DataFrame : columns = feature name, importance</span>
+<span class="sd">    """</span>
+    
+    <span class="n">fi_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">'feature'</span><span class="p">:</span><span class="n">X_train</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+                          <span class="s1">'importance'</span><span class="p">:</span><span class="n">model</span><span class="o">.</span><span class="n">feature_importances_</span><span class="p">}</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s1">'importance'</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">fi_df</span><span class="p">[:(</span><span class="n">n</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">15</span><span class="p">)]</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">'feature'</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="s1">'importance'</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fi_df</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">plot_cmroc</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cf_report</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Convenience function to plot confusion matrix and ROC curve """</span>
+    <span class="n">fig</span><span class="p">,</span><span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+    <span class="n">plot_confusion_matrix</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="n">normalize</span><span class="p">,</span> <span class="n">cf_report</span><span class="o">=</span><span class="n">cf_report</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">roc_score</span> <span class="o">=</span> <span class="n">plot_roc</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">roc_score</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>A few helper functions that will be used extensively during modeling</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">train_df</span> <span class="o">=</span> <span class="n">carav</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">"ORIGIN=='train'"</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">test_df</span> <span class="o">=</span> <span class="n">carav</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">"ORIGIN=='test'"</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>The test data will be treated as a holdout test set, so we will split <code>train_df</code> into a training validation set. This more closely resembles how the actual competition would have been set up.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">train_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="s1">'CARAVAN'</span><span class="p">),</span> <span class="n">train_df</span><span class="o">.</span><span class="n">CARAVAN</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_val</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_val</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.20</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>To address the issue with imbalanced data, we will compare three approaches for each model used:</p>
+<ul>
+<li><p><strong>Random Over Sampling</strong> - attempts to balance the data by randomly selecting from the minority class, in this case, those who did purchase a caravan insurance policy.</p>
+</li>
+<li><p><strong>Random Under Sampling</strong> - balances data by randomly under under selecting from the majority class, those who did not purchase caravan insurance.</p>
+</li>
+<li><p><strong>SMOTE</strong> - Synthetic Minority Over-sampling Technique, constructs new synthetic data by sampling neighboring points. Balancing happens through both oversampling the minority and undersampling the major class</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ros</span> <span class="o">=</span> <span class="n">RandomOverSampler</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">rus</span> <span class="o">=</span> <span class="n">RandomUnderSampler</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">smt</span> <span class="o">=</span> <span class="n">SMOTE</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span> <span class="o">=</span> <span class="n">rus</span><span class="o">.</span><span class="n">fit_sample</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span><span class="n">y_train</span><span class="p">)</span>
+<span class="n">X_over</span><span class="p">,</span> <span class="n">y_over</span> <span class="o">=</span> <span class="n">ros</span><span class="o">.</span><span class="n">fit_sample</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span><span class="n">y_train</span><span class="p">)</span>
+<span class="n">X_smote</span><span class="p">,</span> <span class="n">y_smote</span> <span class="o">=</span> <span class="n">smt</span><span class="o">.</span><span class="n">fit_sample</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span><span class="n">y_train</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">ss</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">_asdict</span><span class="p">(),[</span><span class="n">y_train</span><span class="p">,</span><span class="n">y_under</span><span class="p">,</span><span class="n">y_over</span><span class="p">,</span><span class="n">y_smote</span><span class="p">])],</span> 
+             <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">'Imbalanced'</span><span class="p">,</span><span class="s1">'Undersample'</span><span class="p">,</span><span class="s1">'Oversample'</span><span class="p">,</span><span class="s1">'SMOTE'</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>nobs</th>
+<th>minmax</th>
+<th>mean</th>
+<th>variance</th>
+<th>skewness</th>
+<th>kurtosis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>Imbalanced</th>
+<td>4657</td>
+<td>(0, 1)</td>
+<td>0.059695</td>
+<td>0.056144</td>
+<td>3.716892</td>
+<td>11.815283</td>
+</tr>
+<tr>
+<th>Undersample</th>
+<td>556</td>
+<td>(0, 1)</td>
+<td>0.500000</td>
+<td>0.250450</td>
+<td>0.000000</td>
+<td>-2.000000</td>
+</tr>
+<tr>
+<th>Oversample</th>
+<td>8758</td>
+<td>(0, 1)</td>
+<td>0.500000</td>
+<td>0.250029</td>
+<td>0.000000</td>
+<td>-2.000000</td>
+</tr>
+<tr>
+<th>SMOTE</th>
+<td>8758</td>
+<td>(0, 1)</td>
+<td>0.500000</td>
+<td>0.250029</td>
+<td>0.000000</td>
+<td>-2.000000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Without doing any sort of resampling, the mean was ~0.06 with a heavy skew. Each method of resampling has shifted the mean to 0.5 and eliminated the skewness, each using a different method to achieve this.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Define our baseline models</span>
+<span class="n">bc</span> <span class="o">=</span> <span class="n">BaggingClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ada</span> <span class="o">=</span> <span class="n">AdaBoostClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">rfc</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">lgbm</span> <span class="o">=</span> <span class="n">LGBMClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Imbalanced-Data">Imbalanced Data<a class="anchor-link" href="#Imbalanced-Data">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Bagging">Bagging<a class="anchor-link" href="#Bagging">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">bc_imbal</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">bc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_42_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(AdaBoost)">Boosting (AdaBoost)<a class="anchor-link" href="#Boosting-(AdaBoost)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ada_imbal</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">ada</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_44_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Random-Forest">Random Forest<a class="anchor-link" href="#Random-Forest">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">rfc_imbal</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">rfc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_46_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(LGBM)">Boosting (LGBM)<a class="anchor-link" href="#Boosting-(LGBM)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">lgbm_imbal</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">lgbm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_48_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Imbalanced-Evaluation">Imbalanced Evaluation<a class="anchor-link" href="#Imbalanced-Evaluation">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">imbal_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc_imbal</span><span class="p">,</span> <span class="n">ada_imbal</span><span class="p">,</span> <span class="n">rfc_imbal</span><span class="p">,</span> <span class="n">lgbm_imbal</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">imbal_scores</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">{:25s}</span><span class="s1">: </span><span class="si">{:.5f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">score</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>BaggingClassifier        : 0.53235
+AdaBoostClassifier       : 0.50258
+RandomForestClassifier   : 0.52886
+LGBMClassifier           : 0.52401
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Poor performance across all models when using the imbalanced dataset. AdaBoost was no better than random guessing and the best model, the BaggingClassifier, was barely beyond that.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Undersampling">Undersampling<a class="anchor-link" href="#Undersampling">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Bagging">Bagging<a class="anchor-link" href="#Bagging">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">bc_under</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">bc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_54_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(AdaBoost)">Boosting (AdaBoost)<a class="anchor-link" href="#Boosting-(AdaBoost)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ada_under</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">ada</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_56_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Random-Forest">Random Forest<a class="anchor-link" href="#Random-Forest">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">rfc_under</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">rfc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_58_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(LGBM)">Boosting (LGBM)<a class="anchor-link" href="#Boosting-(LGBM)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">lgbm_under</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">lgbm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_60_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Undersampling-Evaluation">Undersampling Evaluation<a class="anchor-link" href="#Undersampling-Evaluation">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">under_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc_under</span><span class="p">,</span> <span class="n">ada_under</span><span class="p">,</span> <span class="n">rfc_under</span><span class="p">,</span> <span class="n">lgbm_under</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">under_scores</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">{:25s}</span><span class="s1">: </span><span class="si">{:.5f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">score</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>BaggingClassifier        : 0.70144
+AdaBoostClassifier       : 0.67877
+RandomForestClassifier   : 0.70629
+LGBMClassifier           : 0.70568
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Nearly a 20% increase in ROC score was seen across the board using the undersampling method.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Oversampling">Oversampling<a class="anchor-link" href="#Oversampling">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Bagging">Bagging<a class="anchor-link" href="#Bagging">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">bc_over</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">bc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_over</span><span class="p">,</span> <span class="n">y_over</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_66_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(AdaBoost)">Boosting (AdaBoost)<a class="anchor-link" href="#Boosting-(AdaBoost)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ada_over</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">ada</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_over</span><span class="p">,</span> <span class="n">y_over</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_68_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Random-Forest">Random Forest<a class="anchor-link" href="#Random-Forest">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">rfc_over</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">rfc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_over</span><span class="p">,</span> <span class="n">y_over</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_70_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(LGBM)">Boosting (LGBM)<a class="anchor-link" href="#Boosting-(LGBM)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">lgbm_over</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">lgbm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_over</span><span class="p">,</span> <span class="n">y_over</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_72_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Oversampling-Evaluation">Oversampling Evaluation<a class="anchor-link" href="#Oversampling-Evaluation">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">over_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc_over</span><span class="p">,</span> <span class="n">ada_over</span><span class="p">,</span> <span class="n">rfc_over</span><span class="p">,</span> <span class="n">lgbm_over</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">over_scores</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">{:25s}</span><span class="s1">: </span><span class="si">{:.5f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">score</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>BaggingClassifier        : 0.53402
+AdaBoostClassifier       : 0.68278
+RandomForestClassifier   : 0.54344
+LGBMClassifier           : 0.59824
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>In contrast with the imbalanced dataset, with the over sampled data, AdaBoost greatly out performed the other models with this data augmentation method. It still fell shy of the ROC score achieved with undersampling.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="SMOTE">SMOTE<a class="anchor-link" href="#SMOTE">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Bagging">Bagging<a class="anchor-link" href="#Bagging">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">bc_smote</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">bc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_smote</span><span class="p">,</span> <span class="n">y_smote</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_78_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(AdaBoost)">Boosting (AdaBoost)<a class="anchor-link" href="#Boosting-(AdaBoost)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">ada_smote</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">ada</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_smote</span><span class="p">,</span> <span class="n">y_smote</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_80_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Random-Forest">Random Forest<a class="anchor-link" href="#Random-Forest">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">rfc_smote</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">rfc</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_smote</span><span class="p">,</span> <span class="n">y_smote</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_82_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Boosting-(LGBM)">Boosting (LGBM)<a class="anchor-link" href="#Boosting-(LGBM)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">lgbm_smote</span> <span class="o">=</span> <span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">lgbm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_smote</span><span class="p">,</span> <span class="n">y_smote</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_84_0.png"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="SMOTE-Evaluation">SMOTE Evaluation<a class="anchor-link" href="#SMOTE-Evaluation">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">smote_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc_smote</span><span class="p">,</span> <span class="n">ada_smote</span><span class="p">,</span> <span class="n">rfc_smote</span><span class="p">,</span> <span class="n">lgbm_smote</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">models</span><span class="p">,</span> <span class="n">smote_scores</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">{:25s}</span><span class="s1">: </span><span class="si">{:.5f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">score</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>BaggingClassifier        : 0.51517
+AdaBoostClassifier       : 0.54563
+RandomForestClassifier   : 0.54693
+LGBMClassifier           : 0.53888
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="Tweaking-the-Best">Tweaking the Best<a class="anchor-link" href="#Tweaking-the-Best">¶</a></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>For all of the classifiers, Random under sampling was the most successful method of rebalancing the dataset. With the exception of AdaBoost, the other methods barely outperformed random guessing.</p>
+<p>Let's evaluate the best from each group against the holdout test dataset to see what we would have scored had this contest been live.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">test_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">test_df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">bc</span> <span class="o">=</span> <span class="n">BaggingClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span><span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ada</span> <span class="o">=</span> <span class="n">AdaBoostClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">rfc</span> <span class="o">=</span> <span class="n">RandomForestClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span><span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">lgbm</span> <span class="o">=</span> <span class="n">LGBMClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">53</span><span class="p">,</span><span class="n">random_state</span><span class="o">=</span><span class="n">RS</span><span class="p">)</span>
+<span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">bc</span><span class="p">,</span><span class="n">ada</span><span class="p">,</span><span class="n">rfc</span><span class="p">,</span><span class="n">lgbm</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span><span class="n">y_under</span><span class="p">)</span>
+    <span class="n">tpreds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="si">{:25s}</span><span class="s1">: </span><span class="si">{:.5f}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span><span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span><span class="n">tpreds</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>BaggingClassifier        : 0.64729
+AdaBoostClassifier       : 0.64578
+RandomForestClassifier   : 0.65894
+LGBMClassifier           : 0.63902
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>So, if this contest happened to evaluated on Area Under ROC, the best model we could have submitted would have been the Random Forest Classifier, with a score of 0.65.</p>
+<p>A bit better of a score could likely be achieved through ensembling these models as well, but there are many other tweaks that should tried before taking that route.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="Grid-Search">Grid Search<a class="anchor-link" href="#Grid-Search">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">GridSearchCV</span>
+
+<span class="n">param_grid</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'learning_rate'</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="s1">'n_estimators'</span><span class="p">:</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span><span class="mi">40</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">80</span><span class="p">,</span><span class="mi">100</span><span class="p">],</span>
+    <span class="s1">'num_leaves'</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">31</span><span class="p">],</span>
+    <span class="s1">'max_bin'</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">64</span><span class="p">],</span>
+    <span class="s1">'min_child_samples'</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">30</span><span class="p">],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>LGBM on Training/Validation set (<strong>Approx. 2-3 Minutes to run</strong>)</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># eval_metric='auc' Remove random state to expedite search</span>
+<span class="c1"># Setting iid = False will minimize the mean loss across the folds rather than for each fold individually</span>
+<span class="n">lgbm_gs</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">LGBMClassifier</span><span class="p">(),</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s1">'roc_auc'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">iid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="n">lgbm_gs</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Best parameters:'</span><span class="p">,</span> <span class="n">lgbm_gs</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Fitting 5 folds for each of 2000 candidates, totalling 10000 fits
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=-1)]: Done  68 tasks      | elapsed:    1.6s
+[Parallel(n_jobs=-1)]: Done 1278 tasks      | elapsed:   16.6s
+[Parallel(n_jobs=-1)]: Done 3308 tasks      | elapsed:   42.6s
+[Parallel(n_jobs=-1)]: Done 6138 tasks      | elapsed:  1.3min
+[Parallel(n_jobs=-1)]: Done 9788 tasks      | elapsed:  2.1min
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Best parameters: {'learning_rate': 0.1, 'max_bin': 16, 'min_child_samples': 3, 'n_estimators': 40, 'num_leaves': 7}
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Done 10000 out of 10000 | elapsed:  2.1min finished
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">lgbm_gs</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_97_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.7052511415525115</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">lgbm_gs</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_98_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.6546502173437159</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Random Forest (<strong>Approx. 1-2 minutes to run</strong>)</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">param_grid_rf</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'n_estimators'</span><span class="p">:</span> <span class="p">[</span><span class="mi">40</span><span class="p">,</span><span class="mi">60</span><span class="p">,</span><span class="mi">100</span><span class="p">,</span><span class="mi">128</span><span class="p">,</span><span class="mi">256</span><span class="p">],</span>
+    <span class="s1">'min_samples_leaf'</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">17</span><span class="p">,</span><span class="mi">31</span><span class="p">],</span>
+    <span class="s1">'max_leaf_nodes'</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">16</span><span class="p">,</span><span class="mi">32</span><span class="p">,</span><span class="mi">64</span><span class="p">],</span>
+    <span class="s1">'min_samples_split'</span><span class="p">:[</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">30</span><span class="p">],</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">rfc_gs</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">RandomForestClassifier</span><span class="p">(),</span> <span class="n">param_grid_rf</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s1">'roc_auc'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">iid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="n">rfc_gs</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_under</span><span class="p">,</span> <span class="n">y_under</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Best parameters:'</span><span class="p">,</span> <span class="n">rfc_gs</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Fitting 5 folds for each of 500 candidates, totalling 2500 fits
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=-1)]: Done  33 tasks      | elapsed:    3.0s
+[Parallel(n_jobs=-1)]: Done 154 tasks      | elapsed:    7.6s
+[Parallel(n_jobs=-1)]: Done 357 tasks      | elapsed:   15.3s
+[Parallel(n_jobs=-1)]: Done 640 tasks      | elapsed:   26.1s
+[Parallel(n_jobs=-1)]: Done 1005 tasks      | elapsed:   40.3s
+[Parallel(n_jobs=-1)]: Done 1450 tasks      | elapsed:   59.7s
+[Parallel(n_jobs=-1)]: Done 1977 tasks      | elapsed:  1.4min
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Best parameters: {'max_leaf_nodes': 32, 'min_samples_leaf': 7, 'min_samples_split': 20, 'n_estimators': 60}
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Done 2500 out of 2500 | elapsed:  1.8min finished
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">rfc_gs</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_102_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.7038812785388128</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">rfc_gs</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_103_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.6529481010905159</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>Both models saw no improvement in ROC scores compared to the non-grid search approaches. Neither the training evaluation, nor the test evaluation. Let's see how they do with the original, non-resampled data.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">lgbm_gs_ub</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">LGBMClassifier</span><span class="p">(),</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s1">'roc_auc'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">iid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">lgbm_gs_ub</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Best parameters:'</span><span class="p">,</span> <span class="n">lgbm_gs_ub</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Fitting 5 folds for each of 2000 candidates, totalling 10000 fits
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=-1)]: Done  42 tasks      | elapsed:    4.3s
+[Parallel(n_jobs=-1)]: Done 192 tasks      | elapsed:   13.4s
+[Parallel(n_jobs=-1)]: Done 442 tasks      | elapsed:   28.4s
+[Parallel(n_jobs=-1)]: Done 792 tasks      | elapsed:   49.9s
+[Parallel(n_jobs=-1)]: Done 1242 tasks      | elapsed:  1.3min
+[Parallel(n_jobs=-1)]: Done 1792 tasks      | elapsed:  1.9min
+[Parallel(n_jobs=-1)]: Done 2442 tasks      | elapsed:  2.5min
+[Parallel(n_jobs=-1)]: Done 3192 tasks      | elapsed:  3.3min
+[Parallel(n_jobs=-1)]: Done 4042 tasks      | elapsed:  4.1min
+[Parallel(n_jobs=-1)]: Done 4992 tasks      | elapsed:  5.0min
+[Parallel(n_jobs=-1)]: Done 6042 tasks      | elapsed:  6.0min
+[Parallel(n_jobs=-1)]: Done 7192 tasks      | elapsed:  7.1min
+[Parallel(n_jobs=-1)]: Done 8442 tasks      | elapsed:  8.2min
+[Parallel(n_jobs=-1)]: Done 9792 tasks      | elapsed:  9.4min
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Best parameters: {'learning_rate': 0.1, 'max_bin': 8, 'min_child_samples': 10, 'n_estimators': 80, 'num_leaves': 3}
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Done 10000 out of 10000 | elapsed:  9.5min finished
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">lgbm_gs_ub</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_106_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.4995433789954338</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">lgbm_gs_ub</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_107_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.5018350242808447</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># RF</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">rfc_gs_ub</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">RandomForestClassifier</span><span class="p">(),</span> <span class="n">param_grid_rf</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s1">'roc_auc'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">iid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">rfc_gs_ub</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">'Best parameters:'</span><span class="p">,</span> <span class="n">rfc_gs_ub</span><span class="o">.</span><span class="n">best_params_</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Fitting 5 folds for each of 500 candidates, totalling 2500 fits
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
+<pre>[Parallel(n_jobs=-1)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=-1)]: Done  33 tasks      | elapsed:    2.6s
+[Parallel(n_jobs=-1)]: Done 154 tasks      | elapsed:   13.3s
+[Parallel(n_jobs=-1)]: Done 357 tasks      | elapsed:   30.8s
+[Parallel(n_jobs=-1)]: Done 640 tasks      | elapsed:   56.7s
+[Parallel(n_jobs=-1)]: Done 1005 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=-1)]: Done 1450 tasks      | elapsed:  2.4min
+[Parallel(n_jobs=-1)]: Done 1977 tasks      | elapsed:  3.6min
+[Parallel(n_jobs=-1)]: Done 2500 out of 2500 | elapsed:  4.9min finished
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain">
+<pre>Best parameters: {'max_leaf_nodes': 4, 'min_samples_leaf': 7, 'min_samples_split': 30, 'n_estimators': 100}
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="n">rfc_gs_ub</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_110_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.5</pre>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">
+    In [ ]:
+    
+</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">plot_cmroc</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">rfc_gs_ub</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedImage jp-OutputArea-output">
+<img alt="No description has been provided for this image" class="jp-needs-light-background" src="/assets/images/pyimgs/5_imbalanced_bag_boost_rf/5_imbalanced_bag_boost_rf_111_0.png"/>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[ ]:
+    </div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain">
+<pre>0.5</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">¶</a></h2>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<p>In this notebook, we explored the CoIL Challenge 2000 datamining competition dataset. 4 Different models were used:<br/>
+A BaggingClassifer, AdaBoost, Random Forrest, and LightGBM.</p>
+<p>For each of these models, we 4 variants of the same training dataset:<br/>
+Unaltered, Undersampled, Oversampled, and SMOTE.</p>
+<p>We determined that without altering the data, the ROC score is no better than randomly guessing, Oversampling and SMOTE performed slightly better, but Undersampling was clearly the best approach.</p>
+<p>After testing each model with the data modifications, a brute force method of Hyperparameter tuning was attempted via GridSearch followed by an automated means of feature selection. Neither of these methods yielded substantially better results for the compute time they required.</p>
+<p>The highest end <strong>ROC score</strong> we were able to achieve in the synthetic competition environment was <strong>0.66</strong> with a overtuned Random Forest. The highest local test score was <strong>0.784</strong>, showing that the model was clearly beginning to overfit the data.</p>
+<p>At this time, I am unable to answer the question of:</p>
+<blockquote>
+<p>Who is interested in buying Caravan Insurance and why?</p>
+</blockquote>
+<p>with any degree of certainty. <a href="https://web.archive.org/web/20150122025408/http://www.liacs.nl:80/~putten/library/cc2000/ELKANP~1.pdf">The winner</a> of the 2000 challenge determined the strongest indicators variables were number of car policies, buying power, and various other policies held.</p>
+<p>Future work: Countless parameters have been left untweaked, each model could have it's own grid search with each hyperparameter explored. As mentioned earlier, there was an issue with collinearity between percentage variables and number variables, this should be explored further. There is a great deal of EDA left undone, deeper relationships between variables should be investigated through interactions and transformations. Additionally, since this dataset is comprised largely of categorical variables, ordinal or otherwise, CatBoost might be a pragmatic choice for modeling, even attempting to use a Neural Network may yield interesting results.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="References">References<a class="anchor-link" href="#References">¶</a></h3><h4 id="Code-&amp;-Docs:">Code &amp; Docs:<a class="anchor-link" href="#Code-&amp;-Docs:">¶</a></h4><ol>
+<li><a href="https://mlcourse.ai/notebooks/blob/master/jupyter_english/topic06_features/topic6_feature_engineering_feature_selection.ipynb">https://mlcourse.ai/notebooks/blob/master/jupyter_english/topic06_features/topic6_feature_engineering_feature_selection.ipynb</a></li>
+<li><a href="https://medium.com/@rnbrown/creating-and-visualizing-decision-trees-with-python-f8e8fa394176">https://medium.com/@rnbrown/creating-and-visualizing-decision-trees-with-python-f8e8fa394176</a></li>
+<li><a href="https://imbalanced-learn.readthedocs.io/en/stable/api.html">https://imbalanced-learn.readthedocs.io/en/stable/api.html</a></li>
+<li><a href="http://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble">http://scikit-learn.org/stable/modules/classes.html#module-sklearn.ensemble</a></li>
+</ol>
+<h4 id="Text:">Text:<a class="anchor-link" href="#Text:">¶</a></h4><ol>
+<li><a href="https://www.kaggle.com/uciml/caravan-insurance-challenge/home">https://www.kaggle.com/uciml/caravan-insurance-challenge/home</a></li>
+<li><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.RandomOverSampler.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.RandomOverSampler.html</a></li>
+<li><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.under_sampling.RandomUnderSampler.html</a></li>
+<li><a href="http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.SMOTE.html">http://glemaitre.github.io/imbalanced-learn/generated/imblearn.over_sampling.SMOTE.html</a></li>
+</ol>
+<h4 id="Other:">Other:<a class="anchor-link" href="#Other:">¶</a></h4><ol>
+<li><a href="https://web.archive.org/web/20160818233319/http://www.wi.leidenuniv.nl/~putten/library/cc2000/">https://web.archive.org/web/20160818233319/http://www.wi.leidenuniv.nl/~putten/library/cc2000/</a></li>
+<li><a href="https://github.com/jayanttikmani/cross-sellingCaravanInsuranceUsingDataMining/">https://github.com/jayanttikmani/cross-sellingCaravanInsuranceUsingDataMining/</a></li>
+<li><a href="http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html">http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html</a></li>
+</ol>
+</div>
+</div>
+</div>
+</div>
