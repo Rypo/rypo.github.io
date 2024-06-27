@@ -33,6 +33,7 @@ gh-pages/
 pkg/
 test/dest
 tmp/*
+dev/notes
 
 # Editors
 *.sublime-project
