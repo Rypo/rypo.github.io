@@ -1,0 +1,28 @@
+---
+layout: archive
+---
+<div class="notice--info" >
+  {% comment %} style="font-size:1em" inline css because not worth making an entire new class to increase font size {% endcomment %}
+    <strong>Welcome.</strong> 
+    <p>This site just received some minor updates, but GitHub is still the best way to keep up with my latest projects: <a href="https://github.com/Rypo">github.com/Rypo</a>.</p>
+</div>
+  
+
+{{ content }}
+
+<h3 class="archive__subtitle">{{ site.data.ui-text[site.locale].recent_posts | default: "Recent Posts" }}</h3>
+
+{% if paginator %}
+  {% assign posts = paginator.posts %}
+{% else %}
+  {% assign posts = site.posts %}
+{% endif %}
+
+{% assign entries_layout = page.entries_layout | default: 'list' %}
+<div class="entries-{{ entries_layout }}">
+  {% for post in posts %}
+    {% include archive-single.html type=entries_layout %}
+  {% endfor %}
+</div>
+
+{% include paginator.html %}
