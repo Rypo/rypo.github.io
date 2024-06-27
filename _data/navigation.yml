@@ -1,14 +1,11 @@
-# main links
 main:
-  - title: "Python Analyses"
-    url: /python/
-  - title: "R Analyses"
-    url: /r/
-  - title: "About Me"
+  - title: "Blog"
+    url: /blog/
+  # - title: "Categories"
+    # url: /categories/
+  # - title: "Tags"
+    # url: /tags/
+  - title: "Notebooks"
+    url: /nb/
+  - title: "About"
     url: /about
-#  - title: "Sample Posts"
-#    url: /year-archive/
-#  - title: "Sample Collections"
-#    url: /collection-archive/
-  # - title: "Sitemap"
-  #   url: /sitemap/
